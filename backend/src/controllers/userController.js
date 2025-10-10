@@ -9,7 +9,10 @@ router.post('/login', async (req, res) => {
         const result = await UserService.validateUser(user);
         res.status(200).json(result);
     } catch (error) {
-        res.status(500).json({ message: `Erro ao realizar login: ${error}`, success: false });
+        res.status(500).json({
+            message: error.message || 'Erro ao realizar login.',
+            success: false
+        });
     }
 });
 
