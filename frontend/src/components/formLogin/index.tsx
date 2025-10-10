@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { View, Text, TextInput, Pressable, Alert } from "react-native";
+import { View, Text, TextInput, Pressable } from "react-native";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuth } from "~/context/AuthContext";
+import { FeedbackModal } from "~/components/feedbackModal";
 
 type Props = {
   goBack: () => void;
@@ -15,12 +16,19 @@ export function FormLogin({ goBack, onLoginSuccess }: Props) {
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
 
+  // Modal de feedback
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalMessage, setModalMessage] = useState("");
+  const [modalSuccess, setModalSuccess] = useState(true);
+
   const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   const isSenhaValid = senha.length >= 8;
 
   const handleLogin = async () => {
     if (!isEmailValid || !isSenhaValid) {
-      Alert.alert("Erro", "Preencha os campos corretamente.");
+      setModalMessage("Preencha os campos corretamente.");
+      setModalSuccess(false);
+      setModalVisible(true);
       return;
     }
 
@@ -32,13 +40,11 @@ export function FormLogin({ goBack, onLoginSuccess }: Props) {
         password: senha,
       });
 
-      console.log("📥 Resposta do backend (raw):", response.data);
+      const { success, user, message } = response.data;
 
-      if (response.data.success && response.data.user) {
-        const u = response.data.user;
-
-        // Normaliza os campos vindos do backend
-        const user = {
+      if (success && user) {
+        const u = user;
+        const userData = {
           id: u.id || u.usuario_id || null,
           name: u.name || u.nome || "Usuário",
           email: u.email || "",
@@ -48,21 +54,32 @@ export function FormLogin({ goBack, onLoginSuccess }: Props) {
           createdAt: u.createdAt || u.criado_em || null,
         };
 
-        // Mostra no console o que vai ser salvo no AsyncStorage
-        console.log("💾 Usuário normalizado e salvo no cache:", user);
+        await AsyncStorage.setItem("usuarioLogado", JSON.stringify(userData));
+        login(userData);
 
-        // Salva no contexto e localStorage
-        login(user);
-        await AsyncStorage.setItem("usuarioLogado", JSON.stringify(user));
+        // Mostra feedback de sucesso
+        setModalMessage(message || "Login realizado com sucesso!");
+        setModalSuccess(true);
+        setModalVisible(true);
 
-        Alert.alert("Sucesso", `Bem-vindo, ${user.name.split(" ")[0]}!`);
-        onLoginSuccess();
+        // Fecha o modal e redireciona
+        setTimeout(() => {
+          setModalVisible(false);
+          onLoginSuccess();
+        }, 1500);
       } else {
-        Alert.alert("Erro", response.data.message || "Falha no login.");
+        // Mostra a mensagem exata do backend
+        setModalMessage(message || "Falha ao realizar login.");
+        setModalSuccess(false);
+        setModalVisible(true);
       }
     } catch (error: any) {
-      console.error("❌ Erro ao logar:", error);
-      Alert.alert("Erro", "Não foi possível realizar o login.");
+      const msg =
+        error.response?.data?.message ||
+        "Erro inesperado ao tentar conectar ao servidor.";
+      setModalMessage(msg);
+      setModalSuccess(false);
+      setModalVisible(true);
     } finally {
       setLoading(false);
     }
@@ -119,6 +136,14 @@ export function FormLogin({ goBack, onLoginSuccess }: Props) {
       >
         <Text className="text-gray-600 font-medium">Voltar</Text>
       </Pressable>
+
+      {/* Modal de Feedback */}
+      <FeedbackModal
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        message={modalMessage}
+        success={modalSuccess}
+      />
     </View>
   );
 }
