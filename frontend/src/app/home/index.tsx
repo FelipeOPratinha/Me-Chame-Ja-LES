@@ -237,8 +237,18 @@ export default function Home() {
           onRequestClose={() => setShowFormItem(false)}
         >
           <View className="flex-1 bg-black/50 justify-center items-center px-4">
-            <View className="w-full max-w-2xl bg-transparent rounded-2xl p-5">
-              <FormItem goBack={() => setShowFormItem(false)} onConfirmar={handleSubmitItens} />
+            <View
+              className="w-full max-w-2xl rounded-2xl overflow-hidden"
+              style={{
+                backgroundColor: "white",
+                maxHeight: "85%",
+              }}
+            >
+              {/* aqui o conteúdo do formulário */}
+              <FormItem
+                goBack={() => setShowFormItem(false)}
+                onConfirmar={handleSubmitItens}
+              />
             </View>
           </View>
         </Modal>
