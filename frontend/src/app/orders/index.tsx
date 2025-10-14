@@ -1,14 +1,68 @@
-import { View, Text, TextInput, ScrollView, Pressable } from "react-native";
+import { useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  ScrollView,
+  Pressable,
+  ActivityIndicator,
+  Modal,
+} from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Header } from "~/components/header";
 import { Ionicons } from "@expo/vector-icons";
+import axios from "axios";
+import { useBreakpoint } from "~/hooks/useBreakpoint";
 
 export default function Orders() {
-  const pedidos = [
-    { id: "1", origem: "Av. Paulista, 1000", destino: "Rua das Flores, 50", status: "Concluído" },
-    { id: "2", origem: "Rua da Praia, 200", destino: "Av. Brasil, 400", status: "Em andamento" },
-    { id: "3", origem: "Rua X, 10", destino: "Rua Y, 90", status: "Pendente" },
-  ];
+  const [pedidos, setPedidos] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [pedidoSelecionado, setPedidoSelecionado] = useState<any | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
+  const { isSm, isMd, isLg, current } = useBreakpoint();
+
+  useEffect(() => {
+    const fetchPedidos = async () => {
+      try {
+        const response = await axios.get("http://localhost:3000/delivery/getAll");
+        if (response.data?.status === 200) {
+          setPedidos(response.data.data);
+        }
+      } catch (error) {
+        console.error("Erro ao buscar pedidos:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPedidos();
+  }, []);
+
+  // Função para padronizar o tipo
+  const formatarTipo = (tipo: string) => {
+    switch (tipo) {
+      case "documentos":
+        return "Documentos";
+      case "comida":
+        return "Comida";
+      case "materiais_de_construcao":
+        return "Materiais de construção";
+      case "produtos_pequenos":
+        return "Produtos pequenos";
+      case "outros":
+        return "Outros";
+      default:
+        return tipo.charAt(0).toUpperCase() + tipo.slice(1);
+    }
+  };
+
+  // Filtro de pesquisa
+  const pedidosFiltrados = pedidos.filter((p) =>
+    p.description?.toLowerCase().includes(search.toLowerCase()) ||
+    p.type?.toLowerCase().includes(search.toLowerCase()) ||
+    p.status?.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
     <LinearGradient
@@ -18,54 +72,208 @@ export default function Orders() {
       style={{ flex: 1 }}
     >
       <View className="flex-1">
-        {/* Header fixo no topo */}
         <Header />
 
-        {/* Conteúdo */}
-        <View className="flex-1 p-4 space-y-4">
-          {/* Título */}
-          <Text className="text-xl font-bold text-white">Meus Pedidos</Text>
+        <View className="flex-1 w-full xl:w-1/2 mx-auto p-4 space-y-4">
+          {/* Header */}
+          <View className="flex-row items-center justify-between bg-white px-2 mb-3 rounded-xl shadow p-2">
+            <Text className="text-base font-semibold text-[#5E60CE] text-center m-auto">
+              Meus Pedidos
+            </Text>
+          </View>
 
           {/* Barra de pesquisa */}
-          <View className="flex-row items-center bg-white rounded-xl px-3 py-2">
-            <Ionicons name="search" size={20} color="#666" />
+          <View className="flex-row items-center bg-white rounded-xl px-3 py-2 mx-4">
+            <Ionicons name="search" size={20} color="#5E60CE" />
             <TextInput
               placeholder="Pesquisar pedidos..."
               placeholderTextColor="#888"
-              className="flex-1 ml-2 text-base text-gray-700"
+              className="flex-1 ml-2 text-base text-gray-700 outline-none"
+              value={search}
+              onChangeText={setSearch}
             />
           </View>
 
-          {/* Lista de pedidos */}
-          <ScrollView className="flex-1 space-y-3">
-            {pedidos.map((pedido) => (
-              <View
-                key={pedido.id}
-                className="bg-white rounded-xl p-4 my-4 shadow-md"
-              >
-                <Text className="text-sm text-gray-500">#{pedido.id}</Text>
-                <Text className="font-semibold text-gray-800 mt-1">
-                  Origem: {pedido.origem}
-                </Text>
-                <Text className="text-gray-700">Destino: {pedido.destino}</Text>
-                <Text
-                  className={`mt-2 font-semibold ${
-                    pedido.status === "Concluído"
-                      ? "text-green-600"
-                      : pedido.status === "Em andamento"
-                      ? "text-yellow-600"
-                      : "text-red-600"
-                  }`}
+          {/* Lista */}
+          {loading ? (
+            <View className="flex-1 justify-center items-center">
+              <ActivityIndicator size="large" color="#fff" />
+              <Text className="text-white mt-2">Carregando pedidos...</Text>
+            </View>
+          ) : pedidosFiltrados.length === 0 ? (
+            <View className="flex-1 justify-center items-center">
+              <Text className="text-white text-center">
+                Nenhum pedido encontrado.
+              </Text>
+            </View>
+          ) : (
+            <ScrollView className="flex-1 space-y-3 px-4">
+              {pedidosFiltrados.map((pedido) => (
+                <View
+                  key={pedido.id}
+                  className="bg-white rounded-xl p-2 my-3 shadow-md"
                 >
-                  {pedido.status}
-                </Text>
-                <Pressable className="mt-2 self-end bg-blue-500 px-3 py-1 rounded-lg">
-                  <Text className="text-white text-sm">Ver detalhes</Text>
-                </Pressable>
-              </View>
-            ))}
-          </ScrollView>
+                  <View className="flex-row justify-between mb-2">
+                    <View className="bg-slate-100 w-fit p-2 rounded-lg">
+                      <Text className="text-sm font-semibold text-gray-800">
+                        Informações:
+                      </Text>
+                    </View>
+                    <View className="bg-slate-100 w-fit p-2 rounded-lg justify-center">
+                      <Text className="text-xs text-gray-500">ID #{pedido.id}</Text>
+                    </View>
+                  </View>
+
+                  <View className={`${isSm ? "flex-row" : "flex-col"} mb-2 gap-2`}>
+                    <View className={`${isSm ? "flex-1" : "flex"} bg-slate-100 p-2 rounded-lg`}>
+                      <Text className="font-semibold text-gray-700">
+                        Origem:
+                      </Text>
+                      <Text className="text-gray-700">
+                        {pedido.originAddress}
+                      </Text>
+                    </View>
+                    <View className="flex-1 sm:flex bg-slate-100 p-2 rounded-lg">
+                      <Text className="font-semibold text-gray-700">
+                        Destino:
+                      </Text>
+                      <Text className="text-gray-700">
+                        {pedido.destinationAddress}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View className={`${isSm ? "flex-row" : "flex-col"} mb-2 gap-2`}>
+                    <View className={`${isSm ? "flex-1" : "flex"} bg-slate-100 p-2 rounded-lg`}>
+                      <Text className="text-sm font-semibold text-gray-700">
+                        Categoria do pedido:
+                      </Text>
+                      <Text className="text-sm text-gray-700">
+                        {formatarTipo(pedido.type)}
+                      </Text>
+                    </View>
+                    <View className="flex-1 bg-slate-100 p-2 rounded-lg">
+                      <Text className="text-sm font-semibold text-gray-700">
+                        Valor:
+                      </Text>
+                      <Text className="text-gray-700">
+                        R$ {Number(pedido.value).toFixed(2)}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View className="flex bg-slate-100 p-2 rounded-lg mb-2">
+                    <Text className="text-sm font-semibold text-gray-700">
+                      Descrição:
+                    </Text>
+                    <Text className="text-gray-700">
+                      {pedido.description}
+                    </Text>
+                  </View>
+
+                  <View className="flex-1 bg-slate-100 p-2 rounded-lg justify-center items-center mb-3">
+                    <Text
+                      className={`font-semibold ${
+                        pedido.status === "concluida"
+                          ? "text-green-600"
+                          : pedido.status === "aceita"
+                          ? "text-yellow-600"
+                          : "text-red-600"
+                      }`}
+                    >
+                      Status: {pedido.status}
+                    </Text>
+                  </View>
+
+                  <Pressable
+                    className="self-end bg-[#5E60CE] p-3 rounded-lg"
+                    onPress={() => {
+                      setPedidoSelecionado(pedido);
+                      setModalVisible(true);
+                    }}
+                  >
+                    <Text className="text-white text-sm">Detalhes</Text>
+                  </Pressable>
+                </View>
+              ))}
+            </ScrollView>
+          )}
         </View>
+
+        {/* Modal de detalhes */}
+        <Modal
+          visible={modalVisible}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setModalVisible(false)}
+        >
+          <View className="flex-1 bg-black/50 justify-center items-center px-5">
+            <View className="bg-white rounded-2xl w-full p-5 max-h-[80%] max-w-2xl">
+              <Text className="text-xl font-bold text-center text-gray-800 mb-3">
+                Detalhes do Pedido #{pedidoSelecionado?.id}
+              </Text>
+
+              <Text className="text-gray-700">
+                Tipo: {formatarTipo(pedidoSelecionado?.type || "")}
+              </Text>
+              <Text className="text-gray-700">
+                Descrição: {pedidoSelecionado?.description}
+              </Text>
+              <Text className="text-gray-700">
+                Origem: {pedidoSelecionado?.originAddress}
+              </Text>
+              <Text className="text-gray-700">
+                Destino: {pedidoSelecionado?.destinationAddress}
+              </Text>
+              <Text className="text-gray-700 mb-2">
+                Valor: R$ {Number(pedidoSelecionado?.value || 0).toFixed(2)}
+              </Text>
+
+              <Text className="font-semibold text-gray-800 mt-2 mb-1">
+                Itens:
+              </Text>
+
+              {pedidoSelecionado?.items?.length > 0 ? (
+                <ScrollView className="max-h-64">
+                  {pedidoSelecionado.items.map((item: any) => (
+                    <View
+                      key={item.id}
+                      className="border-b border-gray-300 pb-2 mb-2"
+                    >
+                      <Text className="text-gray-700">
+                        <Text className="font-semibold">Nome:</Text> {item.name}
+                      </Text>
+                      <Text className="text-gray-700">
+                        <Text className="font-semibold">Quantidade:</Text>{" "}
+                        {item.quantity}
+                      </Text>
+                      <Text className="text-gray-700">
+                        <Text className="font-semibold">Peso:</Text>{" "}
+                        {item.weight} kg
+                      </Text>
+                      {item.remarks ? (
+                        <Text className="text-gray-700 italic">
+                          "{item.remarks}"
+                        </Text>
+                      ) : null}
+                    </View>
+                  ))}
+                </ScrollView>
+              ) : (
+                <Text className="text-gray-500">Nenhum item cadastrado.</Text>
+              )}
+
+              <Pressable
+                onPress={() => setModalVisible(false)}
+                className="mt-4 bg-blue-500 py-2 rounded-xl"
+              >
+                <Text className="text-center text-white font-semibold">
+                  Fechar
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </Modal>
       </View>
     </LinearGradient>
   );
