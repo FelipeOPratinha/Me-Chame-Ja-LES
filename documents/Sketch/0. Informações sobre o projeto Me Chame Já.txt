@@ -1,0 +1,47 @@
+0. Informações sobre o projeto "Me Chame Já"
+
+==================================================================================
+
+1. Link do repositório congelado:
+
+- https://github.com/JPerluxo/Me-Chame-Ja-LES.git
+
+==================================================================================
+
+2. Link para o vídeo do repositório congelado:
+
+- https://drive.google.com/file/d/1-UiRkv2v35vSkOQUdq9G0okYNdA74KWj/view?usp=drive_link
+
+==================================================================================
+
+3. Estimativa de progressão do projeto:
+
+3.1 - Porcentagem de conclusão do projeto (Aproximadamente 67%)
+
+- Banco criado para a primeira entrega (Concluído) - DBA
+
+- CRUD's de Usuário, Veículo e Entregas/items (Concluído) - Backend
+
+- Criação da interface visual e adaptação para a melhor experiência do usuário (Em Progresso) - Frontend
+
+----------------------------------------------------------------------------------
+
+3.2 - Porcentagem de conclusão da documentação do projeto (Aproximadamente 67%)
+
+- Documento de Visão (Concluído)
+
+- Diagrama de Atividades do negócio (Concluído)
+
+- Requisitos Funcionais, Requisitos não funcionais, regras de negócio (Concluído)
+
+- Matriz de relacionamento RN x RF (Concluído)
+
+- Diagrama de Entidade e Relacionamento (Concluído)
+
+- Diagrama de Classe (Em Progresso)
+
+- Diagrama geral de caso de uso (Em Progresso)
+
+- Especificação do caso de uso (Em Progresso)
+
+- Diagrama de Sequencia (Concluído)
