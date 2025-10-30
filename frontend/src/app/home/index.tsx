@@ -12,10 +12,12 @@ import { TripList } from "~/components/tripList";
 import { VehicleCard } from "~/components/vehicleCard";
 import { FormVehicle } from "~/components/formVehicle";
 import { FormItem } from "~/components/formItem";
-import { deliveryApi } from "~/apis/deliveryApi";
 import { FeedbackModal } from "~/components/feedbackModal";
 import { TripDetails } from "~/components/tripDetails";
 
+// =====================================================
+// Tipos auxiliares
+// =====================================================
 type ItemEntrega = {
   nome_item: string;
   quantidade: string;
@@ -23,6 +25,21 @@ type ItemEntrega = {
   observacoes: string;
 };
 
+type EnderecoCompleto = {
+  lat: number;
+  lon: number;
+  logradouro?: string;
+  numero?: string;
+  bairro?: string;
+  cidade?: string;
+  estado?: string;
+  cep?: string;
+  endereco_formatado?: string;
+};
+
+// =====================================================
+// Componente principal
+// =====================================================
 export default function Home() {
   const [userType, setUserType] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -31,9 +48,10 @@ export default function Home() {
   const [showFormItem, setShowFormItem] = useState(false);
 
   // Estados do mapa
-  const [retirada, setRetirada] = useState<{ lat: number; lon: number } | null>(null);
-  const [paradas, setParadas] = useState<{ lat: number; lon: number }[]>([]);
-  const [destino, setDestino] = useState<{ lat: number; lon: number } | null>(null);
+  const [retirada, setRetirada] = useState<EnderecoCompleto | null>(null);
+  const [paradas, setParadas] = useState<EnderecoCompleto[]>([]);
+  const [destino, setDestino] = useState<EnderecoCompleto | null>(null);
+  const [dataAgendada, setDataAgendada] = useState<Date | null>(null);
   const [resumoRota, setResumoRota] = useState<{ distanciaKm: number; duracaoMin: number } | null>(null);
 
   // Estados da entrega / corrida
@@ -48,7 +66,9 @@ export default function Home() {
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [feedbackSuccess, setFeedbackSuccess] = useState(true);
 
-  // Carregar usuário logado
+  // =====================================================
+  // Carrega usuário logado
+  // =====================================================
   useEffect(() => {
     const carregarUsuario = async () => {
       try {
@@ -66,18 +86,15 @@ export default function Home() {
     carregarUsuario();
   }, []);
 
-  // Extrai coordenadas "lat,lon" → objeto { lat, lon }
-  const extrairCoordenadas = (endereco: string | null): { lat: number; lon: number } | null => {
-    if (!endereco) return null;
-    const partes = endereco.split(",");
-    if (partes.length < 2) return null;
-    const lat = parseFloat(partes[0]);
-    const lon = parseFloat(partes[1]);
-    if (isNaN(lat) || isNaN(lon)) return null;
-    return { lat, lon };
-  };
+  // =====================================================
+  // Função de envio dos itens
+  // =====================================================
+  function formatarDataLocal(date: Date | null) {
+    if (!date) return null;
+    const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+    return localDate.toISOString().slice(0, 19).replace("T", " ");
+  }
 
-  // Ao confirmar o formulário de itens
   const handleSubmitItens = async (itens: ItemEntrega[]) => {
     try {
       const dadosUsuario = await AsyncStorage.getItem("usuarioLogado");
@@ -96,42 +113,108 @@ export default function Home() {
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "");
 
+      // Entrega principal
       const entrega = {
-        requesterId: user.id,
-        status: "pendente",
-        type: tipoNormalizado,
-        vehicleType: tipoVeiculo?.toLowerCase() || "outro",
-        originAddress: `${retirada?.lat},${retirada?.lon}`,
-        destinationAddress: `${destino?.lat},${destino?.lon}`,
-        value: Number((valorCorrida ?? 0).toFixed(2)),
-        description: `Entrega de ${tipoItem}`,
-        items: itens.map((item) => ({
-          name: item.nome_item,
-          quantity: item.quantidade,
-          weight: parseFloat(item.peso_kg.replace(/[^\d.]/g, "")),
-          remarks: item.observacoes,
-        })),
+        entrega_valor: Number((valorCorrida ?? 0).toFixed(2)),
+        entrega_status: "pagamento",
+        entrega_descricao: `Entrega de ${tipoItem}`,
+        entrega_tipo_categoria: tipoNormalizado,
+        entrega_tipo_transporte: tipoVeiculo?.toLowerCase() || "outro",
+        entrega_data_agendada: formatarDataLocal(dataAgendada),
+        entrega_data_finalizacao: null,
+        veiculo_id: null,
+        motorista_id: null,
+        solicitante_id: user.id,
       };
 
-      const resp = await deliveryApi.saveDelivery(entrega);
+      // Trajetos (endereços completos)
+      const trajetos: any[] = [];
 
-      // Se o backend retornar o ID da entrega, guarda pra exibir TripDetails
-      if (resp.data?.data?.id) {
-        setEntregaId(resp.data.data.id);
+      if (retirada) {
+        trajetos.push({
+          trajeto_ordem: 1,
+          endereco: {
+            endereco_logradouro:
+              retirada.logradouro ||
+              retirada.endereco_formatado?.split(",")[0] ||
+              "Ponto de retirada",
+            endereco_numero: retirada.numero || "",
+            endereco_bairro: retirada.bairro || "",
+            endereco_cidade: retirada.cidade || "",
+            endereco_estado: retirada.estado || "",
+            endereco_cep: retirada.cep || "",
+            endereco_latitude: retirada.lat,
+            endereco_longitude: retirada.lon,
+          },
+        });
       }
 
-      setFeedbackMessage("Entrega solicitada com sucesso!");
+      paradas.forEach((p, i) => {
+        trajetos.push({
+          trajeto_ordem: trajetos.length + 1,
+          endereco: {
+            endereco_logradouro:
+              p.logradouro ||
+              p.endereco_formatado?.split(",")[0] ||
+              `Parada ${i + 1}`,
+            endereco_numero: p.numero || "",
+            endereco_bairro: p.bairro || "",
+            endereco_cidade: p.cidade || "",
+            endereco_estado: p.estado || "",
+            endereco_cep: p.cep || "",
+            endereco_latitude: p.lat,
+            endereco_longitude: p.lon,
+          },
+        });
+      });
+
+      if (destino) {
+        trajetos.push({
+          trajeto_ordem: trajetos.length + 1,
+          endereco: {
+            endereco_logradouro:
+              destino.logradouro ||
+              destino.endereco_formatado?.split(",")[0] ||
+              "Ponto de destino",
+            endereco_numero: destino.numero || "",
+            endereco_bairro: destino.bairro || "",
+            endereco_cidade: destino.cidade || "",
+            endereco_estado: destino.estado || "",
+            endereco_cep: destino.cep || "",
+            endereco_latitude: destino.lat,
+            endereco_longitude: destino.lon,
+          },
+        });
+      }
+
+      // Itens
+      const itens_entrega = itens.map((item) => ({
+        item_entrega_nome: item.nome_item,
+        item_entrega_pesagem: parseFloat(item.peso_kg.replace(/[^\d.]/g, "")) || 0,
+        item_entrega_quantidade: parseInt(item.quantidade) || 0,
+        item_entrega_observacoes: item.observacoes || "",
+      }));
+
+      const payload = { entrega, trajetos, itens_entrega };
+
+      console.log("📦 Payload completo e ajustado:");
+      console.log(JSON.stringify(payload, null, 2));
+
+      setFeedbackMessage("Entrega estruturada com sucesso! (JSON ajustado gerado no console)");
       setFeedbackSuccess(true);
       setFeedbackVisible(true);
       setShowFormItem(false);
     } catch (error) {
-      console.error("❌ Erro ao cadastrar entrega:", error);
-      setFeedbackMessage("Erro ao solicitar entrega. Verifique os dados e tente novamente.");
+      console.error("❌ Erro ao estruturar entrega:", error);
+      setFeedbackMessage("Erro ao gerar JSON da entrega.");
       setFeedbackSuccess(false);
       setFeedbackVisible(true);
     }
   };
 
+  // =====================================================
+  // Renderização principal
+  // =====================================================
   if (loading) {
     return (
       <View className="flex-1 items-center justify-center bg-white">
@@ -155,27 +238,16 @@ export default function Home() {
           {/* Mapa */}
           <View className="xl:flex-[2] min-h-48 m-1">
             <Map
-              retirada={
-                corridaAtiva
-                  ? extrairCoordenadas(corridaAtiva.originAddress)
-                  : retirada
-              }
-              paradas={[]}
-              destino={
-                corridaAtiva
-                  ? extrairCoordenadas(corridaAtiva.destinationAddress)
-                  : destino
-              }
+              retirada={retirada}
+              paradas={paradas}
+              destino={destino}
               onResumoRota={setResumoRota}
             />
           </View>
 
           {/* Painel lateral */}
           <View className="flex-1">
-            <ScrollView
-              contentContainerClassName="flex flex-col gap-4 m-1"
-              showsVerticalScrollIndicator={true}
-            >
+            <ScrollView contentContainerClassName="flex flex-col gap-4 m-1" showsVerticalScrollIndicator={true}>
               {userType === "solicitante" ? (
                 <>
                   {!entregaId ? (
@@ -184,6 +256,7 @@ export default function Home() {
                         onSetRetirada={setRetirada}
                         onSetParadas={setParadas}
                         onSetDestino={setDestino}
+                        onSetDataAgendada={setDataAgendada}
                       />
                       <VehicleList onSelectVehicle={setTipoVeiculo} />
                       <CategoryList onSelectCategory={setTipoItem} />
@@ -199,10 +272,7 @@ export default function Home() {
                       )}
                     </>
                   ) : (
-                    <TripDetails
-                      deliveryId={entregaId}
-                      onVoltar={() => setEntregaId(null)}
-                    />
+                    <TripDetails deliveryId={entregaId} onVoltar={() => setEntregaId(null)} />
                   )}
                 </>
               ) : (
@@ -237,18 +307,8 @@ export default function Home() {
           onRequestClose={() => setShowFormItem(false)}
         >
           <View className="flex-1 bg-black/50 justify-center items-center px-4">
-            <View
-              className="w-full max-w-2xl rounded-2xl overflow-hidden"
-              style={{
-                backgroundColor: "white",
-                maxHeight: "85%",
-              }}
-            >
-              {/* aqui o conteúdo do formulário */}
-              <FormItem
-                goBack={() => setShowFormItem(false)}
-                onConfirmar={handleSubmitItens}
-              />
+            <View className="w-full max-w-2xl rounded-2xl overflow-hidden" style={{ backgroundColor: "white", maxHeight: "85%" }}>
+              <FormItem goBack={() => setShowFormItem(false)} onConfirmar={handleSubmitItens} />
             </View>
           </View>
         </Modal>
