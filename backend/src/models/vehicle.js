@@ -1,7 +1,7 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/dbConfig');
 
-const Vehicle = sequelize.define('veiculos', {
+const Vehicle = sequelize.define('veiculo', {
     id: {
         type: DataTypes.INTEGER,
         allowNull: false,
@@ -10,58 +10,60 @@ const Vehicle = sequelize.define('veiculos', {
         field: "veiculo_id"
     },
 
-    userId: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-        field: "usuario_id"
-    },
-
-    licensePlate: {
-        type: DataTypes.STRING,
-        allowNull: false,
-        field: "placa"
-    },
-
-    manufacturer: {
+    type: {
         type: DataTypes.STRING,
         allowNull: true,
-        field: "marca"
-    },
-
-    model: {
-        type: DataTypes.STRING,
-        allowNull: true,
-        field: "modelo"
+        field: "veiculo_tipo"
     },
 
     year: {
         type: DataTypes.INTEGER,
         allowNull: true,
-        field: "ano"
+        field: "veiculo_ano"
     },
 
-    type: {
-        type: DataTypes.ENUM("carro", "caminhao", "moto", "van", "outro"),
-        allowNull: false,
-        field: "tipo"
+    licensePlate: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        field: "veiculo_placa"
+    },
+
+    manufacturer: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        field: "veiculo_marca"
+    },
+
+    model: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        field: "veiculo_modelo"
     },
 
     capacity: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.DECIMAL(10, 2),
         allowNull: true,
-        field: "capacidade_kg"
+        field: "veiculo_capacidade"
     },
 
     transportsAnimals: {
         type: DataTypes.TINYINT,
         allowNull: true,
-        field: "transporte_animais"
+        defaultValue: 0,
+        field: "veiculo_transporte_animal"
     },
 
     transportsMaterials: {
         type: DataTypes.TINYINT,
         allowNull: true,
-        field: "transporte_material_construcao"
+        defaultValue: 0,
+        field: "veiculo_transporte_material_construcao"
+    },
+
+    userId: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        field: "usuario_id"
     }
 }, {
     timestamps: false,

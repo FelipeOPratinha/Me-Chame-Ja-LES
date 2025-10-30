@@ -4,11 +4,13 @@ const CheckVehicleIfExistsStrategy = require('../strategies/Vehicle/CheckVehicle
 const UpdateVehicleStrategy = require('../strategies/Vehicle/UpdateVehicleStrategy');
 const GetVehiclesStrategy = require('../strategies/Vehicle/GetVehiclesStrategy');
 const DeleteVehicleStrategy = require('../strategies/Vehicle/DeleteVehicleStrategy');
+const { Op } = require("sequelize");
 
 class VehicleService {
     static async saveVehicle(vehicle) {
         try {
             await ValidateVehicleStrategy.execute(vehicle);
+            await CheckVehicleIfExistsStrategy.execute({ licensePlate: vehicle.licensePlate }, "mustNotExist");
             return await SaveVehicleStrategy.execute(vehicle);
         } catch (error) {
             throw error;
@@ -19,6 +21,7 @@ class VehicleService {
         try {
             await CheckVehicleIfExistsStrategy.execute({ id: vehicle.id }, "mustExist");
             await ValidateVehicleStrategy.execute(vehicle);
+            await CheckVehicleIfExistsStrategy.execute({ licensePlate: vehicle.licensePlate, id: { [Op.ne]: vehicle.id } }, "mustNotExist");
             return await UpdateVehicleStrategy.execute(vehicle);
         } catch (error) {
             throw error;

@@ -3,31 +3,8 @@ const UserDAO = require('../../daos/UserDAO');
 class ValidateVehicleStrategy {
     static async execute(data) {
         try {
-            const missingFields = ['userId', 'licensePlate', 'type'].filter(field => !(field in data));
-
-            if (missingFields.length > 0) {
-                throw new Error(`Os seguintes campos estão faltando: ${missingFields.join(', ')}.`);
-            }
-
-            if ([data.userId, data.licensePlate, data.type].some(v => v === undefined || v === null || v === '')) {
-                throw new Error('Todos os campos obrigatórios devem estar preenchidos.');
-            }
-
-            const userId = Number(data.userId);
-            if (isNaN(userId) || !Number.isInteger(userId) || !(await UserDAO.findOne({ id: userId }))) {
-                throw new Error('O campo "ID do usuário" deve conter um número válido.');
-            }
-
-            if (typeof data.licensePlate !== 'string') {
-                throw new Error('O campo "Placa" deve conter uma string.');
-            }
-
-            if (data.manufacturer && typeof data.manufacturer !== 'string') {
-                throw new Error('O campo "Marca" deve conter uma string.');
-            }
-
-            if (data.model && typeof data.model !== 'string') {
-                throw new Error('O campo "Modelo" deve conter uma string.');
+            if (data.type && typeof data.type !== 'string') {
+                throw new Error('O campo "Tipo de Veículo" deve conter um valor válido.');
             }
 
             if (data.year) {
@@ -37,8 +14,16 @@ class ValidateVehicleStrategy {
                 }
             }
 
-            if (typeof data.type !== 'string' || !["carro", "caminhao", "moto", "van", "outro"].includes(data.type)) {
-                throw new Error('O campo "Tipo de Veículo" deve conter um valor válido.');
+            if (data.licensePlate && typeof data.licensePlate !== 'string') {
+                throw new Error('O campo "Placa" deve conter uma string.');
+            }
+
+            if (data.manufacturer && typeof data.manufacturer !== 'string') {
+                throw new Error('O campo "Marca" deve conter uma string.');
+            }
+
+            if (data.model && typeof data.model !== 'string') {
+                throw new Error('O campo "Modelo" deve conter uma string.');
             }
 
             if (data.capacity && (typeof data.capacity !== 'number' || data.capacity <= 0)) {
@@ -51,6 +36,11 @@ class ValidateVehicleStrategy {
 
             if (data.transportsMaterials && ![0, 1, true, false].includes(data.transportsMaterials)) {
                 throw new Error('O campo "Transporte de Materiais" deve conter um valor válido.');
+            }
+
+            const userId = Number(data.userId);
+            if (isNaN(userId) || !Number.isInteger(userId) || !(await UserDAO.findOne({ id: userId }))) {
+                throw new Error('O campo "ID do usuário" deve conter um número válido.');
             }
         } catch (error) {
             throw error.message;
