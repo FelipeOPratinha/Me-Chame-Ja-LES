@@ -1,14 +1,18 @@
 class ValidateUserStrategy {
     static async execute(data) {
         try {
-            const missingFields = ['name', 'email', 'password', 'type'].filter(field => !(field in data));
+            const missingFields = ['type', 'name', 'email', 'password'].filter(field => !(field in data));
 
             if (missingFields.length > 0) {
                 throw new Error(`Os seguintes campos estão faltando: ${missingFields.join(', ')}.`);
             }
 
-            if ([data.name, data.email, data.password, data.type].some(v => v === undefined || v === null || v === '')) {
+            if ([data.type, data.name, data.email, data.password].some(v => v === undefined || v === null || v === '')) {
                 throw new Error('Todos os campos obrigatórios devem estar preenchidos.');
+            }
+
+            if (typeof data.type !== 'string') {
+                throw new Error('O campo "Tipo do Usuário" deve conter um valor válido.');
             }
 
             if (typeof data.name !== 'string') {
@@ -32,8 +36,11 @@ class ValidateUserStrategy {
                 throw new Error('O campo "Celular" deve conter uma string numérica de 11 dígitos.');
             }
 
-            if (typeof data.type !== 'string' || !["motorista", "solicitante"].includes(data.type)) {
-                throw new Error('O campo "Tipo do Usuário" deve conter um valor válido.');
+            if (data.loyaltyPoints) {
+                const loyaltyPoints = Number(data.loyaltyPoints);
+                if (isNaN(loyaltyPoints) || loyaltyPoints < 0) {
+                    throw new Error('O campo "Pontos de Fidelidade" deve conter um ano válido.');
+                }
             }
         } catch (error) {
             throw error.message;
