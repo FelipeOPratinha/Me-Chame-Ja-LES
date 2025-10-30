@@ -30,7 +30,7 @@ CREATE TABLE `entregas` (
   `motorista_id` int DEFAULT NULL,
   `veiculo_id` int DEFAULT NULL,
   `tipo_veiculo` varchar(255) DEFAULT NULL,
-  `status` enum('pendente','aceita','em_andamento','concluida','cancelada') NOT NULL DEFAULT 'pendente',
+  `status` enum('pagamento','pendente','aceita','em_andamento','concluida','cancelada') NOT NULL DEFAULT 'pendente',
   `tipo` enum('documentos','comida','produtos_pequenos','mudancas','materiais_de_construcao','outros') NOT NULL,
   `descricao` varchar(255) DEFAULT NULL,
   `endereco_origem` varchar(255) NOT NULL,
