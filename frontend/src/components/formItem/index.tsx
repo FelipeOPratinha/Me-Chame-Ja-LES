@@ -2,6 +2,7 @@ import { useState } from "react";
 import { View, Text, TextInput, Pressable, ScrollView } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { FeedbackModal } from "~/components/feedbackModal";
+import { useRouter } from "expo-router";
 
 type ItemEntrega = {
   nome_item: string;
@@ -16,6 +17,8 @@ type FormItemProps = {
 };
 
 export function FormItem({ onConfirmar, goBack }: FormItemProps) {
+  const router = useRouter();
+
   const [itens, setItens] = useState<ItemEntrega[]>([
     { nome_item: "", quantidade: "", peso_kg: "", observacoes: "" },
   ]);
@@ -65,6 +68,18 @@ export function FormItem({ onConfirmar, goBack }: FormItemProps) {
     }
 
     onConfirmar(itens);
+
+    // Mostra o modal de sucesso e prepara o redirecionamento
+    setFeedbackMessage("Entrega cadastrada com sucesso!");
+    setFeedbackSuccess(true);
+    setFeedbackVisible(true);
+  };
+
+  const handleCloseFeedback = () => {
+    setFeedbackVisible(false);
+    if (feedbackSuccess) {
+      router.replace("/orders");
+    }
   };
 
   return (
@@ -165,7 +180,7 @@ export function FormItem({ onConfirmar, goBack }: FormItemProps) {
         visible={feedbackVisible}
         message={feedbackMessage}
         success={feedbackSuccess}
-        onClose={() => setFeedbackVisible(false)}
+        onClose={handleCloseFeedback}
       />
     </View>
   );
