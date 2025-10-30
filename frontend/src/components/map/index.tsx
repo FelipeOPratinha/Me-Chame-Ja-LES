@@ -162,7 +162,7 @@ export const Map: React.FC<MapProps> = ({ retirada, paradas, destino, onResumoRo
     }
 
     desenharRota();
-  }, [retirada?.lat, retirada?.lon, destino?.lat, destino?.lon, paradas.length]);
+  }, [retirada?.lat, retirada?.lon, destino?.lat, destino?.lon, JSON.stringify(paradas)]);
 
   return (
     <View className="w-full h-full bg-white rounded-xl overflow-hidden shadow-md">
