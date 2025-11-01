@@ -142,11 +142,13 @@ export function TripList({ onTripAccepted }: { onTripAccepted?: (trip: any) => v
         case "aceita":
           setActiveTrip(trip);
           setTrips([]);
+          await AsyncStorage.setItem("corridaAtiva", JSON.stringify(trip)); // <-- salva no storage
           onTripAccepted?.(trip);
           break;
 
         case "pendente":
           setActiveTrip(null);
+          await AsyncStorage.removeItem("corridaAtiva"); // <-- limpa se cancelar
           onTripAccepted?.(null);
           await carregarCorridas();
           setFeedbackMessage("Entrega cancelada e devolvida à lista.");
@@ -154,6 +156,7 @@ export function TripList({ onTripAccepted }: { onTripAccepted?: (trip: any) => v
 
         case "concluida":
           setShowQRCode(true);
+          await AsyncStorage.removeItem("corridaAtiva"); // <-- limpa ao concluir
           setFeedbackMessage("Entrega concluída com sucesso!");
           break;
 
@@ -176,7 +179,24 @@ export function TripList({ onTripAccepted }: { onTripAccepted?: (trip: any) => v
   };
 
   useEffect(() => {
-    carregarCorridas();
+    const carregarCorridaAtiva = async () => {
+      try {
+        const corridaSalva = await AsyncStorage.getItem("corridaAtiva");
+        if (corridaSalva) {
+          const trip = JSON.parse(corridaSalva);
+          setActiveTrip(trip);
+          onTripAccepted?.(trip);
+        } else {
+          await carregarCorridas();
+        }
+      } catch (error) {
+        console.error("❌ Erro ao carregar corrida ativa:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    carregarCorridaAtiva();
   }, []);
 
   // Loader
@@ -326,7 +346,7 @@ export function TripList({ onTripAccepted }: { onTripAccepted?: (trip: any) => v
         ) : (
           <View className="items-center py-6">
             <Text className="text-gray-500 text-center">
-              Nenhuma corrida compatível com seu veículo no momento.
+              Nenhuma corrida disponível.
             </Text>
           </View>
         )}
