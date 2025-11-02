@@ -62,9 +62,9 @@ export default function Profile() {
       <View className="flex-1">
         <Header />
 
-        <ScrollView className="flex-1 p-6 space-y-6">
+        <ScrollView className="flex-1 w-full xl:w-1/2 mx-auto p-4 space-y-4">
           {/* Card do usuário */}
-          <View className="bg-white rounded-2xl shadow-lg p-6 mb-4 items-center">
+          <View className="bg-white rounded-2xl shadow-lg p-6 mb-4 items-center hover:bg-slate-200">
             {/* Gera imagem com iniciais do nome */}
             <Image
               source={{
@@ -73,7 +73,7 @@ export default function Profile() {
                   encodeURIComponent(user?.name || "Usuário") +
                   "&backgroundType=gradientLinear&fontWeight=700",
               }}
-              className="w-28 h-28 rounded-full mb-4 border-4 border-indigo-200"
+              className="w-28 h-28 rounded-full mb-4 border-4 border-indigo-200 hover:border-indigo-400"
             />
 
             <Text className="text-xl font-bold text-gray-900">
@@ -95,7 +95,7 @@ export default function Profile() {
 
           {/* Opções */}
           <View className="bg-white rounded-2xl shadow-md divide-y mb-4">
-            <Pressable className="flex-row items-center justify-between p-4">
+            <Pressable className="bg-white border-none flex-row items-center justify-between p-4 m-2 hover:bg-slate-200 rounded-2xl">
               <View className="flex-row items-center space-x-3">
                 <Ionicons name="person-circle-outline" size={22} color="#5E60CE" />
                 <Text className="text-gray-800">Editar Perfil</Text>
@@ -103,7 +103,7 @@ export default function Profile() {
               <Ionicons name="chevron-forward" size={20} color="#555" />
             </Pressable>
 
-            <Pressable className="flex-row items-center justify-between p-4">
+            <Pressable className="bg-white border-none flex-row items-center justify-between p-4 m-2 hover:bg-slate-200 rounded-2xl">
               <View className="flex-row items-center space-x-3">
                 <MaterialIcons name="lock-outline" size={22} color="#5E60CE" />
                 <Text className="text-gray-800">Mudar Senha</Text>
@@ -111,7 +111,7 @@ export default function Profile() {
               <Ionicons name="chevron-forward" size={20} color="#555" />
             </Pressable>
 
-            <Pressable className="flex-row items-center justify-between p-4">
+            <Pressable className="bg-white border-none flex-row items-center justify-between p-4 m-2 hover:bg-slate-200 rounded-2xl">
               <View className="flex-row items-center space-x-3">
                 <Ionicons name="notifications-outline" size={22} color="#5E60CE" />
                 <Text className="text-gray-800">Notificações</Text>
@@ -119,7 +119,7 @@ export default function Profile() {
               <Ionicons name="chevron-forward" size={20} color="#555" />
             </Pressable>
 
-            <Pressable className="flex-row items-center justify-between p-4">
+            <Pressable className="bg-white border-none flex-row items-center justify-between p-4 m-2 hover:bg-slate-200 rounded-2xl">
               <View className="flex-row items-center space-x-3">
                 <Ionicons name="document-text-outline" size={22} color="#5E60CE" />
                 <Text className="text-gray-800">Termos & Condições</Text>
@@ -132,7 +132,7 @@ export default function Profile() {
           <View className="space-y-3">
             <Pressable
               onPress={handleLogout}
-              className="bg-red-500 rounded-xl p-4 items-center shadow"
+              className="bg-red-500 w-full xl:w-fit min-w-24 mx-auto rounded-xl p-4 items-center shadow hover:bg-red-700"
             >
               <Text className="text-white font-bold">Sair</Text>
             </Pressable>
