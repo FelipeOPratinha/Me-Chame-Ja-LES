@@ -6,7 +6,6 @@ import {
   Pressable,
   ActivityIndicator,
   Dimensions,
-  Image,
   ScrollView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -58,10 +57,12 @@ export function TripList({ onTripAccepted }: { onTripAccepted?: (trip: any) => v
   const [loading, setLoading] = useState(true);
   const [resolvendoEnderecos, setResolvendoEnderecos] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [showQRCode, setShowQRCode] = useState(false);
   const [feedbackVisible, setFeedbackVisible] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [feedbackSuccess, setFeedbackSuccess] = useState(true);
+  const [showCompleted, setShowCompleted] = useState(false);
+  const [rating, setRating] = useState(0);
+  const [requesterName, setRequesterName] = useState<string | null>(null);
   const carregandoRef = useRef(false);
 
   // Busca corridas compatíveis com o veículo
@@ -111,12 +112,11 @@ export function TripList({ onTripAccepted }: { onTripAccepted?: (trip: any) => v
     }
   };
 
-  // Atualiza status da entrega (aceita, pendente, concluída)
+  // Atualiza status da entrega
   const atualizarStatusCorrida = async (trip: any, novoStatus: string) => {
     try {
       const userData = await AsyncStorage.getItem("usuarioLogado");
       if (!userData) throw new Error("Usuário não encontrado.");
-
       const user = JSON.parse(userData);
 
       const payload = {
@@ -132,46 +132,37 @@ export function TripList({ onTripAccepted }: { onTripAccepted?: (trip: any) => v
       };
 
       const response = await axios.post("http://localhost:3000/delivery/update", payload);
+      if (response.data?.status !== 200) throw new Error("Falha ao atualizar status da entrega.");
 
-      if (response.data?.status !== 200) {
-        throw new Error("Falha ao atualizar status da entrega.");
-      }
-
-      // Atualiza estados e feedback com base no novo status
       switch (novoStatus) {
         case "aceita":
           setActiveTrip(trip);
           setTrips([]);
-          await AsyncStorage.setItem("corridaAtiva", JSON.stringify(trip)); // <-- salva no storage
+          await AsyncStorage.setItem("corridaAtiva", JSON.stringify(trip));
           onTripAccepted?.(trip);
           break;
 
         case "pendente":
           setActiveTrip(null);
-          await AsyncStorage.removeItem("corridaAtiva"); // <-- limpa se cancelar
+          await AsyncStorage.removeItem("corridaAtiva");
           onTripAccepted?.(null);
           await carregarCorridas();
           setFeedbackMessage("Entrega cancelada e devolvida à lista.");
           break;
 
         case "concluida":
-          setShowQRCode(true);
-          await AsyncStorage.removeItem("corridaAtiva"); // <-- limpa ao concluir
-          setFeedbackMessage("Entrega concluída com sucesso!");
+          await AsyncStorage.removeItem("corridaAtiva");
+          const requester = await axios.get(`http://localhost:3000/user/getById?id=${trip.requesterId}`);
+          setRequesterName(requester.data?.data?.name || "Usuário desconhecido");
+          setShowCompleted(true);
           break;
-
-        default:
-          setFeedbackMessage("Status atualizado.");
       }
 
       setFeedbackSuccess(true);
       setFeedbackVisible(true);
     } catch (err: any) {
       console.error("❌ Erro ao atualizar status:", err);
-      const msg =
-        err.response?.data?.message ||
-        err.message ||
-        "Erro inesperado ao atualizar a entrega.";
+      const msg = err.response?.data?.message || err.message || "Erro inesperado.";
       setFeedbackMessage(`❌ ${msg}`);
       setFeedbackSuccess(false);
       setFeedbackVisible(true);
@@ -195,7 +186,6 @@ export function TripList({ onTripAccepted }: { onTripAccepted?: (trip: any) => v
         setLoading(false);
       }
     };
-
     carregarCorridaAtiva();
   }, []);
 
@@ -210,8 +200,75 @@ export function TripList({ onTripAccepted }: { onTripAccepted?: (trip: any) => v
       </View>
     );
 
-  // Corrida ativa
-  if (activeTrip && !showQRCode) {
+  // Corrida concluída
+  if (showCompleted && activeTrip) {
+    return (
+      <View className="bg-white rounded-2xl shadow-lg p-6 mt-4 items-center">
+        <Text className="text-lg font-bold text-[#5E60CE] mb-4 text-center">Corrida Concluída</Text>
+
+        <Text className="text-gray-700 mb-2">
+          Entrega de: <Text className="font-semibold">{requesterName}</Text>
+        </Text>
+
+        <Text className="text-gray-700 mb-4">
+          Valor ganho:{" "}
+          <Text className="font-semibold text-[#5E60CE]">
+            R$ {parseFloat(activeTrip.value || 0).toFixed(2)}
+          </Text>
+        </Text>
+
+        <Text className="text-gray-800 mb-2 font-medium">Avalie sua corrida:</Text>
+
+        <View className="flex-row mb-4">
+          {[1, 2, 3, 4, 5].map((num) => (
+            <Pressable key={num} onPress={() => setRating(num)}>
+              <Ionicons
+                name={num <= rating ? "star" : "star-outline"}
+                size={32}
+                color={num <= rating ? "#FFD700" : "#AAA"}
+              />
+            </Pressable>
+          ))}
+        </View>
+
+        <Pressable
+          onPress={async () => {
+            try {
+              // depois caso formos salvar no banco
+              /* await axios.post("http://localhost:3000/feedback/save", {
+                deliveryId: activeTrip.id,
+                rating,
+              }); */
+
+              // define mensagem de sucesso
+              setFeedbackMessage("Feedback enviado!");
+              setFeedbackSuccess(true);
+              setFeedbackVisible(true);
+
+              // limpa e volta às corridas pendentes
+              setShowCompleted(false);
+              setActiveTrip(null);
+              onTripAccepted?.(null);
+              await carregarCorridas();
+            } catch (error) {
+              setFeedbackMessage("Erro ao enviar feedback.");
+              setFeedbackSuccess(false);
+              setFeedbackVisible(true);
+            }
+          }}
+          disabled={rating === 0}
+          className={`px-6 py-3 rounded-lg ${
+            rating === 0 ? "bg-gray-400" : "bg-[#5E60CE]"
+          }`}
+        >
+          <Text className="text-white font-semibold">Enviar Feedback</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
+  // Corrida ativa (em andamento)
+  if (activeTrip && !showCompleted) {
     return (
       <ScrollView className="bg-white rounded-2xl shadow-lg p-6 mt-4">
         <Text className="text-lg font-bold text-[#5E60CE] mb-4 text-center">
@@ -250,44 +307,6 @@ export function TripList({ onTripAccepted }: { onTripAccepted?: (trip: any) => v
           </Pressable>
         </View>
       </ScrollView>
-    );
-  }
-
-  // QR Code de pagamento
-  if (showQRCode && activeTrip) {
-    const fakePixLink = `https://pagamento.pix/${activeTrip.id}-${activeTrip.value}`;
-    return (
-      <View className="bg-white rounded-2xl shadow-lg p-6 mt-4 items-center">
-        <Text className="text-lg font-bold text-[#5E60CE] mb-4 text-center">
-          Corrida Concluída
-        </Text>
-
-        <Image
-          source={{
-            uri: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${fakePixLink}`,
-          }}
-          style={{ width: 200, height: 200, marginBottom: 20 }}
-        />
-
-        <Text className="text-gray-800 text-center mb-3">Valor da Corrida:</Text>
-        <Text className="text-xl font-bold text-[#5E60CE] mb-4">
-          R$ {parseFloat(activeTrip.value || 0).toFixed(2)}
-        </Text>
-
-        <Text className="text-gray-500 text-center mb-4">{fakePixLink}</Text>
-
-        <Pressable
-          onPress={() => {
-            setActiveTrip(null);
-            setShowQRCode(false);
-            onTripAccepted?.(null);
-            carregarCorridas();
-          }}
-          className="bg-[#5E60CE] px-6 py-3 rounded-lg"
-        >
-          <Text className="text-white font-semibold">Voltar às Corridas</Text>
-        </Pressable>
-      </View>
     );
   }
 
@@ -345,9 +364,7 @@ export function TripList({ onTripAccepted }: { onTripAccepted?: (trip: any) => v
           />
         ) : (
           <View className="items-center py-6">
-            <Text className="text-gray-500 text-center">
-              Nenhuma corrida disponível.
-            </Text>
+            <Text className="text-gray-500 text-center">Nenhuma corrida disponível.</Text>
           </View>
         )}
       </View>
