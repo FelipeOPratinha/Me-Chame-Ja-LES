@@ -48,7 +48,6 @@ CREATE TABLE entrega (
     entrega_tipo_transporte VARCHAR(50),
     entrega_data_agendada DATETIME,
     entrega_data_finalizacao DATETIME,
-    trajeto_id INT,
     veiculo_id INT,
     motorista_id INT,
     solicitante_id INT,
