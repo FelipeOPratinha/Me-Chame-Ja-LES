@@ -1,7 +1,7 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/dbConfig');
 
-const Delivery = sequelize.define('entregas', {
+const Delivery = sequelize.define('entrega', {
     id: {
         type: DataTypes.INTEGER,
         allowNull: false,
@@ -10,16 +10,46 @@ const Delivery = sequelize.define('entregas', {
         field: "entrega_id"
     },
 
-    requesterId: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-        field: "solicitante_id"
+    value: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: true,
+        field: "entrega_valor"
     },
 
-    driverId: {
-        type: DataTypes.INTEGER,
+    status: {
+        type: DataTypes.STRING,
         allowNull: true,
-        field: "motorista_id"
+        field: "entrega_status"
+    },
+
+    description: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        field: "entrega_descricao"
+    },
+
+    categoryType: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        field: "entrega_tipo_categoria"
+    },
+
+    transportType: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        field: "entrega_tipo_transporte"
+    },
+
+    scheduledTime: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        field: "entrega_data_agendada"
+    },
+
+    completedTime: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        field: "entrega_data_finalizacao"
     },
 
     vehicleId: {
@@ -28,58 +58,16 @@ const Delivery = sequelize.define('entregas', {
         field: "veiculo_id"
     },
 
-    vehicleType: {
-        type: DataTypes.STRING,
+    driverId: {
+        type: DataTypes.INTEGER,
         allowNull: true,
-        field: "tipo_veiculo"
+        field: "motorista_id"
     },
 
-    status: {
-        type: DataTypes.ENUM("pendente", "aceita", "em_andamento", "concluida", "cancelada"),
-        allowNull: false,
-        field: "status"
-    },
-
-    type: {
-        type: DataTypes.ENUM("documentos","comida","produtos_pequenos","mudancas","materiais_de_construcao","outros"),
-        allowNull: false,
-        field: "tipo"
-    },
-
-    description: {
-        type: DataTypes.STRING,
+    requesterId: {
+        type: DataTypes.INTEGER,
         allowNull: true,
-        field: "descricao"
-    },
-
-    originAddress: {
-        type: DataTypes.STRING,
-        allowNull: false,
-        field: "endereco_origem"
-    },
-
-    destinationAddress: {
-        type: DataTypes.STRING,
-        allowNull: false,
-        field: "endereco_destino"
-    },
-
-    scheduledTime: {
-        type: DataTypes.DATE,
-        allowNull: true,
-        field: "horario_agendado"
-    },
-
-    completedTime: {
-        type: DataTypes.DATE,
-        allowNull: true,
-        field: "horario_concluido"
-    },
-
-    value: {
-        type: DataTypes.DECIMAL(10, 2),
-        allowNull: true,
-        field: "valor"
+        field: "solicitante_id"
     }
 }, {
     timestamps: false,

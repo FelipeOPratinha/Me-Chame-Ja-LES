@@ -52,6 +52,13 @@ const User = sequelize.define('usuario', {
         allowNull: true,
         defaultValue: 0,
         field: "usuario_pontos_fidelidade"
+    },
+
+    isActive: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        defaultValue: 1,
+        field: "usuario_ativo"
     }
 }, {
     timestamps: false,

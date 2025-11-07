@@ -42,6 +42,13 @@ class ValidateUserStrategy {
                     throw new Error('O campo "Pontos de Fidelidade" deve conter um ano válido.');
                 }
             }
+
+            if (data.isActive) {
+                const isActive = Number(data.isActive);
+                if (isNaN(isActive) || ![0, 1].includes(data.isActive)) {
+                    throw new Error('O campo "Usuário Ativo" deve conter um ano válido.');
+                }
+            }
         } catch (error) {
             throw error.message;
         }

@@ -1,9 +1,9 @@
-const User = require('../models/user');
+const Address = require('../models/address');
 
-class UserDAO {
+class AddressDAO {
     static async save(data, transaction = null) {
         try {
-            return await User.create(data, { transaction });
+            return await Address.create(data, { transaction });
         } catch (error) {
             throw error;
         }
@@ -12,7 +12,7 @@ class UserDAO {
     static async update(data, transaction = null) {
         try {
             const { id, ...fieldsToUpdate } = data;
-            return await User.update(fieldsToUpdate, {
+            return await Address.update(fieldsToUpdate, {
                 where: { id: id },
                 transaction
             });
@@ -23,9 +23,7 @@ class UserDAO {
 
     static async delete(id, transaction = null) {
         try {
-            return await User.update(
-            { isActive: 0 },
-            {
+            return await Address.destroy({
                 where: { id: id },
                 transaction
             });
@@ -36,7 +34,7 @@ class UserDAO {
 
     static async findOne(where, transaction = null) {
         try {
-            return await User.findOne({
+            return await Address.findOne({
                 where: where,
                 transaction
             });
@@ -47,11 +45,11 @@ class UserDAO {
 
     static async findAll(transaction = null) {
         try {
-            return await User.findAll({ transaction });
+            return await Address.findAll({ transaction });
         } catch (error) {
             throw error;
         }
     }
 }
 
-module.exports = UserDAO;
+module.exports = AddressDAO;

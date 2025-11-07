@@ -1,7 +1,7 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/dbConfig');
 
-const DeliveryItem = sequelize.define('itens_entrega', {
+const DeliveryItem = sequelize.define('item_entrega', {
     id: {
         type: DataTypes.INTEGER,
         allowNull: false,
@@ -10,34 +10,34 @@ const DeliveryItem = sequelize.define('itens_entrega', {
         field: "item_entrega_id"
     },
 
-    deliveryId: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-        field: "entrega_id"
-    },
-
     name: {
         type: DataTypes.STRING,
         allowNull: true,
-        field: "nome_item"
+        field: "item_entrega_nome"
+    },
+
+    weight: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: true,
+        field: "item_entrega_pesagem"
     },
 
     quantity: {
         type: DataTypes.INTEGER,
         allowNull: true,
-        field: "quantidade"
-    },
-
-    weight: {
-        type: DataTypes.INTEGER,
-        allowNull: true,
-        field: "peso_kg"
+        field: "item_entrega_quantidade"
     },
 
     remarks: {
         type: DataTypes.STRING,
         allowNull: true,
-        field: "observacoes"
+        field: "item_entrega_observacoes"
+    },
+
+    deliveryId: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        field: "entrega_id"
     }
 }, {
     timestamps: false,

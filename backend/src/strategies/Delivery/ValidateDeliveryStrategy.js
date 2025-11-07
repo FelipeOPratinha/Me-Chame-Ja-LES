@@ -3,98 +3,139 @@ const VehicleDAO = require('../../daos/VehicleDAO');
 
 class ValidateDeliveryStrategy {
     static async execute(data) {
+        const delivery = data.delivery;
         try {
-            const missingFields = ['requesterId', 'status', 'type', 'originAddress', 'destinationAddress'].filter(field => !(field in data));
-
-            if (missingFields.length > 0) {
-                throw new Error(`Os seguintes campos estão faltando: ${missingFields.join(', ')}.`);
-            }
-
-            if ([data.requesterId, data.status, data.type, data.originAddress, data.destinationAddress].some(v => v === undefined || v === null || v === '')) {
-                throw new Error('Todos os campos obrigatórios devem estar preenchidos.');
-            }
-
-            const requester = await UserDAO.findOne({ id: Number(data.requesterId) });
-            if (!requester || requester.type !== 'solicitante') {
-                throw new Error('O campo "Solicitante" deve conter o ID de um usuário válido do tipo "solicitante".');
-            }
-
-            if (data.driverId !== undefined && data.driverId !== null && data.driverId !== '') {
-                const driver = await UserDAO.findOne({ id: Number(data.driverId) });
-
-                if (!driver || driver.type !== 'motorista') {
-                    throw new Error('O campo "Motorista" deve conter o ID de um usuário válido do tipo "motorista".');
-                }
-            }
-
-            if (data.vehicleId !== undefined && data.vehicleId !== null && data.vehicleId !== '') {
-                const vehicleId = Number(data.vehicleId);
-                if (isNaN(vehicleId) || !Number.isInteger(vehicleId) || !(await VehicleDAO.findOne({ id: vehicleId }))) {
-                    throw new Error('O campo "Veículo" deve conter um ID válido.');
-                }
-            }
-
-            if (typeof data.status !== 'string' || !["pendente", "aceita", "em_andamento", "concluida", "cancelada"].includes(data.status)) {
-                throw new Error('O campo "Status" deve conter um valor válido.');
-            }
-
-            if (typeof data.type !== 'string' || !["documentos","comida","produtos_pequenos","mudancas","materiais_de_construcao","outros"].includes(data.type)) {
-                throw new Error('O campo "Tipo" deve conter um valor válido.');
-            }
-
-            if (data.description && typeof data.description !== 'string') {
-                throw new Error('O campo "Descrição" deve conter uma string.');
-            }
-
-            if (typeof data.originAddress !== 'string' || typeof data.destinationAddress !== 'string') {
-                throw new Error('Os campos "Endereço de origem" e "Endereço de destino" devem conter strings válidas.');
-            }
-
-            if (data.scheduledTime && isNaN(Date.parse(data.scheduledTime))) {
-                throw new Error('O campo "Horário agendado" deve conter uma data válida.');
-            }
-
-            if (data.completedTime && isNaN(Date.parse(data.completedTime))) {
-                throw new Error('O campo "Horário concluído" deve conter uma data válida.');
-            }
-
-            if (data.value !== undefined && data.value !== null && data.value !== '') {
-                const value = Number(data.value);
+            if (delivery.value) {
+                const value = Number(delivery.value);
                 if (isNaN(value) || value < 0) {
                     throw new Error('O campo "Valor" deve conter um número positivo.');
                 }
             }
 
-            if (!Array.isArray(data.items) || data.items.length === 0) {
-                throw new Error('O campo "Itens" deve conter uma lista com pelo menos um item.');
+            if (delivery.status && typeof delivery.status !== 'string') {
+                throw new Error('O campo "Status" deve conter um valor válido.');
             }
 
-            data.items.forEach((item, index) => {
-                if (typeof item.name !== 'string' || item.name.trim() === '') {
-                    throw new Error(`O item ${index + 1} deve ter um nome válido.`);
-                }
+            if (delivery.description && typeof delivery.description !== 'string') {
+                throw new Error('O campo "Descrição" deve conter um valor válido.');
+            }
 
-                if (item.quantity !== undefined) {
-                    const quantity = Number(item.quantity);
-                    if (isNaN(quantity) || quantity <= 0) {
-                        throw new Error(`O item ${index + 1} deve ter uma quantidade válida.`);
-                    }
-                }
+            if (delivery.categoryType && typeof delivery.categoryType !== 'string') {
+                throw new Error('O campo "Tipo da Categortia" deve conter um valor válido.');
+            }
 
-                if (item.weight !== undefined) {
-                    const weight = Number(item.weight);
-                    if (isNaN(weight) || weight <= 0) {
-                        throw new Error(`O item ${index + 1} deve ter um peso válido.`);
-                    }
-                }
+            if (delivery.transportType && typeof delivery.transportType !== 'string') {
+                throw new Error('O campo "Tipo do Transporte" deve conter um valor válido.');
+            }
 
-                if (item.remarks && typeof item.remarks !== 'string') {
-                    throw new Error(`O campo 'Observações' do item ${index + 1} deve ser uma string.`);
+            if (delivery.scheduledTime && isNaN(Date.parse(delivery.scheduledTime))) {
+                throw new Error('O campo "Horário agendado" deve conter uma data válida.');
+            }
+
+            if (delivery.completedTime && isNaN(Date.parse(delivery.completedTime))) {
+                throw new Error('O campo "Horário concluído" deve conter uma data válida.');
+            }
+
+            if (delivery.vehicleId) {
+                const vehicleId = Number(delivery.vehicleId);
+                if (isNaN(vehicleId) || !Number.isInteger(vehicleId) || !(await VehicleDAO.findOne({ id: vehicleId }))) {
+                    throw new Error('O campo "Veículo" deve conter um ID válido.');
                 }
-            });
+            }
+
+            if (delivery.driverId) {
+                const driverId = Number(delivery.driverId);
+                if (isNaN(driverId) || !Number.isInteger(driverId) || !(await UserDAO.findOne({ id: driverId }))) {
+                    throw new Error('O campo "Motorista" deve conter o ID de um usuário válido.');
+                }
+            }
+
+            if (delivery.requesterId) {
+                const requesterId = Number(delivery.requesterId);
+                if (isNaN(requesterId) || !Number.isInteger(requesterId) || !(await UserDAO.findOne({ id: requesterId }))) {
+                    throw new Error('O campo "Solicitante" deve conter o ID de um usuário válido.');
+                }
+            }
 
         } catch (error) {
             throw error.message;
+        }
+
+        if (data.routes) {
+            try {
+                for (const route of data.routes) {
+                    const order = Number(route.order);
+                    if (isNaN(order) || order < 0) {
+                        throw new Error('Ordem do Trajeto" deve conter um ano válido.');
+                    }
+
+                    const address = route.address;
+                    if (address.street && typeof address.street !== 'string') {
+                        throw new Error('O campo "Logradouro" deve conter um valor válido.');
+                    }
+
+                    if (address.number && typeof address.number !== 'string') {
+                        throw new Error('O campo "Número" deve conter um valor válido.');
+                    }
+
+                    if (address.unit && typeof address.unit !== 'string') {
+                        throw new Error('O campo "Complemento" deve conter um valor válido.');
+                    }
+
+                    if (address.neighborhood && typeof address.neighborhood !== 'string') {
+                        throw new Error('O campo "Bairro" deve conter um valor válido.');
+                    }
+
+                    if (address.city && typeof address.city !== 'string') {
+                        throw new Error('O campo "Cidade" deve conter um valor válido.');
+                    }
+
+                    if (address.state && typeof address.state !== 'string') {
+                        throw new Error('O campo "Estado" deve conter um valor válido.');
+                    }
+
+                    if (address.cep && typeof address.cep !== 'string') {
+                        throw new Error('O campo "CEP" deve conter um valor válido.');
+                    }
+
+                    if (address.latitude && typeof address.latitude !== 'number') {
+                        throw new Error('O campo "Latitude" deve conter um valor válido.');
+                    }
+
+                    if (address.longitude && typeof address.longitude !== 'number') {
+                        throw new Error('O campo "Longitude" deve conter um valor válido.');
+                    }
+                }
+            } catch (error) {
+                throw error.message;
+            }
+        }
+
+        if (data.deliveryItems) {
+            try {
+                for (const deliveryItem of data.deliveryItems) {
+                    if (deliveryItem.name && typeof deliveryItem.name !== 'string') {
+                        throw new Error('O campo "Nome" deve conter um valor válido.');
+                    }
+
+                    if (deliveryItem.weight && (typeof deliveryItem.weight !== 'number' || deliveryItem.weight <= 0)) {
+                        throw new Error('O campo "Pesagem" deve ser um número positivo.');
+                    }
+
+                    if (deliveryItem.quantity) {
+                        const quantity = Number(deliveryItem.quantity);
+                        if (isNaN(quantity) || !Number.isInteger(quantity)) {
+                            throw new Error('O campo "Quantidade" deve conter um valor válido.');
+                        }
+                    }
+
+                    if (deliveryItem.remarks && typeof deliveryItem.remarks !== 'string') {
+                        throw new Error('O campo "Observações" deve conter um valor válido.');
+                    }
+                }
+            } catch (error) {
+                throw error.message;
+            }
         }
     }
 }
