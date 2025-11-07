@@ -14,6 +14,7 @@ import { FormVehicle } from "~/components/formVehicle";
 import { FormItem } from "~/components/formItem";
 import { FeedbackModal } from "~/components/feedbackModal";
 import { TripDetails } from "~/components/tripDetails";
+import axios from "axios";
 
 // =====================================================
 // Tipos auxiliares
@@ -113,6 +114,43 @@ export default function Home() {
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "");
 
+      // Mapeamento de estados → siglas
+      const mapaSiglas: Record<string, string> = {
+        "Acre": "AC",
+        "Alagoas": "AL",
+        "Amapá": "AP",
+        "Amazonas": "AM",
+        "Bahia": "BA",
+        "Ceará": "CE",
+        "Distrito Federal": "DF",
+        "Espírito Santo": "ES",
+        "Goiás": "GO",
+        "Maranhão": "MA",
+        "Mato Grosso": "MT",
+        "Mato Grosso do Sul": "MS",
+        "Minas Gerais": "MG",
+        "Pará": "PA",
+        "Paraíba": "PB",
+        "Paraná": "PR",
+        "Pernambuco": "PE",
+        "Piauí": "PI",
+        "Rio de Janeiro": "RJ",
+        "Rio Grande do Norte": "RN",
+        "Rio Grande do Sul": "RS",
+        "Rondônia": "RO",
+        "Roraima": "RR",
+        "Santa Catarina": "SC",
+        "São Paulo": "SP",
+        "Sergipe": "SE",
+        "Tocantins": "TO",
+      };
+
+      // Função auxiliar para pegar sigla ou manter valor original
+      function getSigla(estado?: string) {
+        if (!estado) return "";
+        return mapaSiglas[estado] || estado;
+      }
+
       // Entrega principal
       const entrega = {
         entrega_valor: Number((valorCorrida ?? 0).toFixed(2)),
@@ -141,7 +179,7 @@ export default function Home() {
             endereco_numero: retirada.numero || "",
             endereco_bairro: retirada.bairro || "",
             endereco_cidade: retirada.cidade || "",
-            endereco_estado: retirada.estado || "",
+            endereco_estado: getSigla(retirada.estado) || "",
             endereco_cep: retirada.cep || "",
             endereco_latitude: retirada.lat,
             endereco_longitude: retirada.lon,
@@ -160,7 +198,7 @@ export default function Home() {
             endereco_numero: p.numero || "",
             endereco_bairro: p.bairro || "",
             endereco_cidade: p.cidade || "",
-            endereco_estado: p.estado || "",
+            endereco_estado: getSigla(p.estado) || "",
             endereco_cep: p.cep || "",
             endereco_latitude: p.lat,
             endereco_longitude: p.lon,
@@ -179,7 +217,7 @@ export default function Home() {
             endereco_numero: destino.numero || "",
             endereco_bairro: destino.bairro || "",
             endereco_cidade: destino.cidade || "",
-            endereco_estado: destino.estado || "",
+            endereco_estado: getSigla(destino.estado) || "",
             endereco_cep: destino.cep || "",
             endereco_latitude: destino.lat,
             endereco_longitude: destino.lon,
@@ -197,16 +235,35 @@ export default function Home() {
 
       const payload = { entrega, trajetos, itens_entrega };
 
-      console.log("📦 Payload completo e ajustado:");
-      console.log(JSON.stringify(payload, null, 2));
+      /* console.log("Enviando payload para o backend:");
+      console.log(JSON.stringify(payload, null, 2)); */
 
-      setFeedbackMessage("Entrega estruturada com sucesso! (JSON ajustado gerado no console)");
-      setFeedbackSuccess(true);
-      setFeedbackVisible(true);
-      setShowFormItem(false);
+      const response = await axios.post("http://localhost:3000/delivery/save", payload);
+
+      if (response.data?.success || response.status === 200) {
+        setFeedbackMessage("Entrega cadastrada com sucesso!");
+        setFeedbackSuccess(true);
+        setFeedbackVisible(true);
+
+        // Fecha modal e reseta estados após sucesso
+        setTimeout(() => {
+          setShowFormItem(false);
+          setRetirada(null);
+          setParadas([]);
+          setDestino(null);
+          setDataAgendada(null);
+          setValorCorrida(null);
+          setTipoVeiculo(null);
+          setTipoItem(null);
+        }, 1500);
+      } else {
+        setFeedbackMessage("Erro ao cadastrar entrega. Verifique os dados e tente novamente.");
+        setFeedbackSuccess(false);
+        setFeedbackVisible(true);
+      }
     } catch (error) {
-      console.error("❌ Erro ao estruturar entrega:", error);
-      setFeedbackMessage("Erro ao gerar JSON da entrega.");
+      console.error("❌ Erro ao cadastrar entrega:", error);
+      setFeedbackMessage("Erro ao se comunicar com o servidor.");
       setFeedbackSuccess(false);
       setFeedbackVisible(true);
     }
