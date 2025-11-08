@@ -47,17 +47,19 @@ export default function Orders() {
     fetchPedidos();
   }, []);
 
-  // Função para padronizar o tipo
-  const formatarTipo = (tipo: string) => {
+  // Função para padronizar o tipo de categoria
+  const formatarTipoCategoria = (tipo: string) => {
     switch (tipo) {
       case "documentos":
         return "Documentos";
       case "comida":
         return "Comida";
-      case "materiais_de_construcao":
-        return "Materiais de construção";
       case "produtos_pequenos":
         return "Produtos pequenos";
+      case "mudancas":
+        return "Mudanças";
+      case "materiais_de_construcao":
+        return "Materiais de construção";
       case "outros":
         return "Outros";
       default:
@@ -65,12 +67,46 @@ export default function Orders() {
     }
   };
 
-  // Filtro de pesquisa
-  const pedidosFiltrados = pedidos.filter((p) =>
-    p.description?.toLowerCase().includes(search.toLowerCase()) ||
-    p.type?.toLowerCase().includes(search.toLowerCase()) ||
-    p.status?.toLowerCase().includes(search.toLowerCase())
-  );
+  // Função para padronizar o tipo de transporte
+  const formatarTipoTransporte = (tipo: string) => {
+    switch (tipo) {
+      case "moto":
+        return "Moto";
+      case "hatch":
+        return "Hatch";
+      case "carro":
+        return "Carro";
+      case "utilitario":
+        return "Utilitário";
+      case "van":
+        return "Van";
+      case "caminhao":
+        return "Caminhão";
+      default:
+        return tipo.charAt(0).toUpperCase() + tipo.slice(1);
+    }
+  };
+
+  // Filtro de pesquisa ajustado para o novo formato
+  const pedidosFiltrados = pedidos.filter((p) => {
+    const entrega = p.entrega;
+    const trajeto = p.trajetos?.[0] || {};
+    const termo = search.toLowerCase();
+
+    return (
+      entrega.id?.toString().toLowerCase().includes(termo) ||
+      entrega.entrega_valor?.toString().toLowerCase().includes(termo) ||
+      entrega.entrega_status?.toLowerCase().includes(termo) ||
+      entrega.entrega_descricao?.toLowerCase().includes(termo) ||
+      entrega.entrega_tipo_categoria?.toLowerCase().includes(termo) ||
+      entrega.entrega_tipo_transporte?.toLowerCase().includes(termo) ||
+      trajeto.endereco.endereco_logradouro?.toLowerCase().includes(termo) ||
+      trajeto.endereco.endereco_bairro?.toLowerCase().includes(termo) ||
+      trajeto.endereco.endereco_cidade?.toLowerCase().includes(termo) ||
+      trajeto.endereco.endereco_estado?.toLowerCase().includes(termo) ||
+      trajeto.endereco.endereco_cep?.toLowerCase().includes(termo)
+    );
+  });
 
   return (
     <LinearGradient
@@ -102,196 +138,310 @@ export default function Orders() {
             />
           </View>
 
-          {/* Lista */}
+          {/* Lista de Entregas */}
           {loading ? (
             <View className="flex-1 justify-center items-center">
-              <ActivityIndicator size="large" color="#fff" />
+              <ActivityIndicator size="large" color="#5E60CE" />
               <Text className="text-white mt-2">Carregando pedidos...</Text>
             </View>
           ) : pedidosFiltrados.length === 0 ? (
             <View className="flex-1 justify-center items-center">
-              <Text className="text-white text-center">
-                Nenhum pedido encontrado.
-              </Text>
+              <Text className="text-white text-center">Nenhum pedido encontrado.</Text>
             </View>
           ) : (
-            <ScrollView className="flex-1 space-y-3 px-4">
-              {pedidosFiltrados.map((pedido) => (
-                <View
-                  key={pedido.id}
-                  className="bg-white rounded-xl p-2 my-3 shadow-md"
-                >
-                  <View className="flex-row justify-between mb-2">
-                    <View className="bg-slate-100 w-fit p-2 rounded-lg">
-                      <Text className="text-sm font-semibold text-gray-800">
-                        Informações:
-                      </Text>
-                    </View>
-                    <View className="bg-slate-100 w-fit p-2 rounded-lg justify-center">
-                      <Text className="text-xs text-gray-500">ID #{pedido.id}</Text>
-                    </View>
-                  </View>
+            <ScrollView className="flex-1 space-y-4 px-4 py-3">
+              {pedidosFiltrados.map((pedido, index) => {
+                const entrega = pedido.entrega;
+                const origem = pedido.trajetos?.[0]?.endereco;
+                const destino = pedido.trajetos?.[pedido.trajetos.length - 1]?.endereco;
 
-                  <View className={`${isSm ? "flex-row" : "flex-col"} mb-2 gap-2`}>
-                    <View className={`${isSm ? "flex-1" : "flex"} bg-slate-100 p-2 rounded-lg`}>
-                      <Text className="font-semibold text-gray-700">
-                        Origem:
-                      </Text>
-                      <Text className="text-gray-700">
-                        {pedido.originAddress}
-                      </Text>
-                    </View>
-                    <View className="flex-1 sm:flex bg-slate-100 p-2 rounded-lg">
-                      <Text className="font-semibold text-gray-700">
-                        Destino:
-                      </Text>
-                      <Text className="text-gray-700">
-                        {pedido.destinationAddress}
-                      </Text>
-                    </View>
-                  </View>
+                type StatusEntrega = "pagamento" | "pendente" | "aceita" | "concluida" | "cancelada";
 
-                  <View className={`${isSm ? "flex-row" : "flex-col"} mb-2 gap-2`}>
-                    <View className={`${isSm ? "flex-1" : "flex"} bg-slate-100 p-2 rounded-lg`}>
-                      <Text className="text-sm font-semibold text-gray-700">
-                        Categoria do pedido:
-                      </Text>
-                      <Text className="text-sm text-gray-700">
-                        {formatarTipo(pedido.type)}
+                const statusMap: Record<StatusEntrega, { color: string; label: string }> = {
+                  pagamento: { color: "bg-red-100", label: "Pagamento" },
+                  pendente: { color: "bg-orange-100", label: "Pendente" },
+                  aceita: { color: "bg-yellow-100", label: "Aceita" },
+                  concluida: { color: "bg-green-100", label: "Concluída" },
+                  cancelada: { color: "bg-gray-100", label: "Cancelada" },
+                };
+
+                const statusKey = (entrega.entrega_status as StatusEntrega) || "pendente";
+                const statusStyle = statusMap[statusKey];
+
+                return (
+                  <View
+                    key={index}
+                    className="bg-white rounded-2xl p-4 shadow-md mb-10"
+                  >
+                    {/* Header */}
+                    <View className="flex-row justify-between items-center mb-2">
+                      <View className="bg-gradient-to-r from-indigo-500 to-blue-500 px-3 py-1 rounded-lg">
+                        <Text className="text-white text-sm font-semibold">
+                          #{entrega.id} • {formatarTipoCategoria(entrega.entrega_tipo_categoria)}
+                        </Text>
+                      </View>
+                      <View className={`px-2 py-1 rounded-full ${statusStyle.color}`}>
+                        <Text className="text-gray-600 text-xs font-semibold">{statusStyle.label}</Text>
+                      </View>
+                    </View>
+
+                    {/* Origem/Destino */}
+                    <View className={`${isSm ? "flex-row" : "flex-col"} gap-2 mb-2`}>
+                      <View className="flex-1 bg-gray-50 p-2 rounded-xl shadow-sm hover:bg-slate-200">
+                        <Text className="font-semibold text-gray-700 mb-0.5">📍 Origem</Text>
+                        <Text className="text-gray-600 text-sm leading-tight">
+                          {origem
+                            ? `${origem.endereco_logradouro}, ${origem.endereco_bairro}, ${origem.endereco_numero || "s/n"}`
+                            : "Não informado"}
+                        </Text>
+                      </View>
+                      <View className="flex-1 bg-gray-50 p-2 rounded-xl shadow-sm hover:bg-slate-200">
+                        <Text className="font-semibold text-gray-700 mb-0.5">🎯 Destino</Text>
+                        <Text className="text-gray-600 text-sm leading-tight">
+                          {destino
+                            ? `${destino.endereco_logradouro}, ${destino.endereco_bairro}, ${destino.endereco_numero || "s/n"}`
+                            : "Não informado"}
+                        </Text>
+                      </View>
+                    </View>
+
+                    {/* Categoria, Valor */}
+                    <View className={`${isSm ? "flex-row" : "flex-col"} gap-2 mb-2`}>
+                      <View className="flex-1 bg-gray-50 p-2 rounded-xl shadow-sm hover:bg-slate-200">
+                        <Text className="text-sm font-semibold text-gray-700 mb-0.5">🚚 Transporte</Text>
+                        <Text className="text-gray-600 text-sm capitalize">
+                          {entrega.entrega_tipo_transporte}
+                        </Text>
+                      </View>
+                      <View className="flex-1 bg-gray-50 p-2 rounded-xl shadow-sm hover:bg-slate-200">
+                        <Text className="text-sm font-semibold text-gray-700 mb-0.5">💰 Valor</Text>
+                        <Text className="text-gray-600">
+                          R$ {Number(entrega.entrega_valor).toFixed(2)}
+                        </Text>
+                      </View>
+                    </View>
+
+                    {/* Descrição */}
+                    <View className="bg-gray-50 p-2 rounded-xl shadow-sm hover:bg-slate-200 mb-3">
+                      <Text className="text-sm font-semibold text-gray-700 mb-0.5">📝 Descrição</Text>
+                      <Text className="text-gray-600 text-sm">
+                        {entrega.entrega_descricao || "Sem descrição"}
                       </Text>
                     </View>
-                    <View className="flex-1 bg-slate-100 p-2 rounded-lg">
-                      <Text className="text-sm font-semibold text-gray-700">
-                        Valor:
-                      </Text>
-                      <Text className="text-gray-700">
-                        R$ {Number(pedido.value).toFixed(2)}
-                      </Text>
-                    </View>
-                  </View>
 
-                  <View className="flex bg-slate-100 p-2 rounded-lg mb-2">
-                    <Text className="text-sm font-semibold text-gray-700">
-                      Descrição:
-                    </Text>
-                    <Text className="text-gray-700">
-                      {pedido.description}
-                    </Text>
-                  </View>
-
-                  <View className="flex-1 bg-slate-100 p-2 rounded-lg justify-center items-center mb-3">
-                    <Text
-                      className={`font-semibold ${
-                        pedido.status === "concluida"
-                          ? "text-green-600"
-                          : pedido.status === "aceita"
-                          ? "text-yellow-600"
-                          : "text-red-600"
-                      }`}
-                    >
-                      Status: {pedido.status}
-                    </Text>
-                  </View>
-                  
-                  <View className="flex-row justify-end gap-2">
-                    {pedido.status === "pagamento" && (
+                    {/* Botões */}
+                    <View className="flex-row justify-end gap-2 mt-2">
+                      {entrega.entrega_status === "pagamento" && (
+                        <Pressable
+                          className="bg-red-500 px-4 py-2 rounded-lg hover:bg-red-700"
+                          onPress={() => {
+                            setPedidoSelecionado(pedido);
+                            setModalPagamento(true);
+                          }}
+                        >
+                          <Text className="text-white text-sm font-semibold">Pagamento</Text>
+                        </Pressable>
+                      )}
                       <Pressable
-                        className="bg-green-600 p-3 rounded-lg"
+                        className="bg-blue-500 px-4 py-2 rounded-lg hover:bg-blue-700"
                         onPress={() => {
                           setPedidoSelecionado(pedido);
-                          setModalPagamento(true);
+                          setModalVisible(true);
                         }}
                       >
-                        <Text className="text-white text-sm">Pagamento</Text>
+                        <Text className="text-white text-sm font-semibold">Detalhes</Text>
                       </Pressable>
-                    )}
-                    <Pressable
-                      className="bg-[#5E60CE] p-3 rounded-lg"
-                      onPress={() => {
-                        setPedidoSelecionado(pedido);
-                        setModalVisible(true);
-                      }}
-                    >
-                      <Text className="text-white text-sm">Detalhes</Text>
-                    </Pressable>
+                    </View>
                   </View>
-                </View>
-              ))}
+                );
+              })}
             </ScrollView>
           )}
         </View>
 
-        {/* Modal de detalhes */}
+        {/* Modal de detalhes da entrega */}
         <Modal
           visible={modalVisible}
           transparent
-          animationType="slide"
+          animationType="fade"
           onRequestClose={() => setModalVisible(false)}
         >
-          <View className="flex-1 bg-black/50 justify-center items-center px-5">
-            <View className="bg-white rounded-2xl w-full p-5 max-h-[80%] max-w-2xl">
-              <Text className="text-xl font-bold text-center text-gray-800 mb-3">
-                Detalhes do Pedido #{pedidoSelecionado?.id}
-              </Text>
+          <View className="flex-1 bg-black/60 justify-center items-center px-4">
+            <View className="bg-white rounded-3xl w-full max-w-2xl overflow-hidden shadow-xl">
+              {pedidoSelecionado && (
+                <>
+                  {/* Cabeçalho */}
+                  <LinearGradient
+                    colors={["#4F46E5", "#3B82F6"]}
+                    className="p-3"
+                  >
+                    <Text className="text-white text-xl font-bold text-center">
+                      Entrega #{pedidoSelecionado.entrega.id}
+                    </Text>
+                    <Text className="text-white text-center text-sm mt-1">
+                      {formatarTipoCategoria(pedidoSelecionado.entrega.entrega_tipo_categoria)} •{" "}
+                      {pedidoSelecionado.entrega.entrega_status === "pendente"
+                        ? "Pendente"
+                        : pedidoSelecionado.entrega.entrega_status === "pagamento"
+                        ? "Aguardando Pagamento"
+                        : "Concluída"}
+                    </Text>
+                  </LinearGradient>
 
-              <Text className="text-gray-700">
-                Tipo: {formatarTipo(pedidoSelecionado?.type || "")}
-              </Text>
-              <Text className="text-gray-700">
-                Descrição: {pedidoSelecionado?.description}
-              </Text>
-              <Text className="text-gray-700">
-                Origem: {pedidoSelecionado?.originAddress}
-              </Text>
-              <Text className="text-gray-700">
-                Destino: {pedidoSelecionado?.destinationAddress}
-              </Text>
-              <Text className="text-gray-700 mb-2">
-                Valor: R$ {Number(pedidoSelecionado?.value || 0).toFixed(2)}
-              </Text>
-
-              <Text className="font-semibold text-gray-800 mt-2 mb-1">
-                Itens:
-              </Text>
-
-              {pedidoSelecionado?.items?.length > 0 ? (
-                <ScrollView className="max-h-64">
-                  {pedidoSelecionado.items.map((item: any) => (
-                    <View
-                      key={item.id}
-                      className="border-b border-gray-300 pb-2 mb-2"
-                    >
-                      <Text className="text-gray-700">
-                        <Text className="font-semibold">Nome:</Text> {item.name}
-                      </Text>
-                      <Text className="text-gray-700">
-                        <Text className="font-semibold">Quantidade:</Text>{" "}
-                        {item.quantity}
-                      </Text>
-                      <Text className="text-gray-700">
-                        <Text className="font-semibold">Peso:</Text>{" "}
-                        {item.weight} kg
-                      </Text>
-                      {item.remarks ? (
-                        <Text className="text-gray-700 italic">
-                          "{item.remarks}"
+                  {/* Corpo */}
+                  <ScrollView className="p-5 max-h-[70vh]">
+                    {/* Informações principais */}
+                    <View className="mb-4">
+                      <View className="flex-row items-center justify-between bg-white px-2 mb-3 rounded-xl shadow-sm p-2">
+                        <Text className="text-base font-semibold text-[#5E60CE] text-center m-auto">
+                          Informações principais
                         </Text>
-                      ) : null}
+                      </View>
+                      <View className="bg-white rounded-xl p-3 shadow-sm hover:bg-slate-200">
+                        <Text className="text-gray-800 py-1">
+                          <Text className="font-semibold">Descrição:</Text>{" "}
+                          {pedidoSelecionado.entrega.entrega_descricao}
+                        </Text>
+                        <Text className="text-gray-800 py-1">
+                          <Text className="font-semibold">Transporte:</Text>{" "}
+                          {formatarTipoTransporte(pedidoSelecionado.entrega.entrega_tipo_transporte)}
+                        </Text>
+                        <Text className="text-gray-800 py-1">
+                          <Text className="font-semibold">Valor:</Text>{" "}
+                          R${" "}
+                          {Number(pedidoSelecionado.entrega.entrega_valor).toFixed(2)}
+                        </Text>
+                      </View>
                     </View>
-                  ))}
-                </ScrollView>
-              ) : (
-                <Text className="text-gray-500">Nenhum item cadastrado.</Text>
-              )}
 
-              <Pressable
-                onPress={() => setModalVisible(false)}
-                className="mt-4 bg-blue-500 py-2 rounded-xl"
-              >
-                <Text className="text-center text-white font-semibold">
-                  Fechar
-                </Text>
-              </Pressable>
+                    {/* Trajetos */}
+                    <View className="mb-5">
+                      <View className="flex-row items-center justify-between bg-white px-2 mb-3 rounded-xl shadow-sm p-2">
+                        <Text className="text-base font-semibold text-[#5E60CE] text-center m-auto">
+                          Trajeto
+                        </Text>
+                      </View>
+                      {pedidoSelecionado.trajetos.map((t: any, idx: number) => (
+                        <View
+                          key={idx}
+                          className="bg-white rounded-xl p-3 mb-2 shadow-sm flex-row items-start hover:bg-slate-200"
+                        >
+                          <View className="bg-blue-200 rounded-full w-7 h-7 flex items-center justify-center mr-3">
+                            <Text className="text-blue-700 font-bold">{t.trajeto_ordem}</Text>
+                          </View>
+                          <View className="flex-1">
+                            <Text className="text-gray-800 font-semibold">
+                              {t.endereco.endereco_logradouro}, {t.endereco.endereco_numero || "s/n"}
+                            </Text>
+                            <Text className="text-gray-600 text-sm">
+                              {t.endereco.endereco_bairro} • {t.endereco.endereco_cidade} -{" "}
+                              {t.endereco.endereco_estado}
+                            </Text>
+                            <Text className="text-gray-400 text-xs">
+                              CEP: {t.endereco.endereco_cep}
+                            </Text>
+                          </View>
+                        </View>
+                      ))}
+                    </View>
+
+                    {/* Itens */}
+                    <View>
+                      <View className="flex-row items-center justify-between bg-white px-2 mb-3 rounded-xl shadow-sm p-2">
+                        <Text className="text-base font-semibold text-[#5E60CE] text-center m-auto">
+                          Itens da Entrega
+                        </Text>
+                      </View>
+                      {pedidoSelecionado.itens_entrega?.length > 0 ? (
+                        pedidoSelecionado.itens_entrega.map((item: any, idx: number) => (
+                          <View
+                            key={idx}
+                            className="bg-white rounded-xl p-3 mb-2 shadow-sm hover:bg-slate-200"
+                          >
+                            <Text className="text-gray-800 font-semibold mb-1">
+                              {item.item_entrega_nome}
+                            </Text>
+                            <View className="flex-row flex-wrap justify-between">
+                              <Text className="text-gray-700 text-sm">
+                                Quantidade: {item.item_entrega_quantidade}
+                              </Text>
+                              <Text className="text-gray-700 text-sm">
+                                Peso: {item.item_entrega_pesagem} kg
+                              </Text>
+                            </View>
+                            {item.item_entrega_observacoes && (
+                              <Text className="text-gray-500 italic text-sm mt-1">
+                                "{item.item_entrega_observacoes}"
+                              </Text>
+                            )}
+                          </View>
+                        ))
+                      ) : (
+                        <Text className="text-gray-500">Nenhum item cadastrado.</Text>
+                      )}
+                    </View>
+                  </ScrollView>
+                  
+                  <View className="flex flex-row my-4">
+                    {/* Botão Cancelar Entrega */}
+                    {pedidoSelecionado.entrega.entrega_status !== "cancelada" && pedidoSelecionado.entrega.entrega_status !== "concluida" &&  (
+                      <Pressable
+                        onPress={async () => {
+                          try {
+                            const entrega = pedidoSelecionado.entrega;
+                            const updatedDelivery = {
+                              id: entrega.id,
+                              entrega_status: "cancelada",
+                            };
+
+                            const response = await axios.post(
+                              "http://localhost:3000/delivery/update",
+                              updatedDelivery
+                            );
+
+                            if (response.data?.success || response.status === 200) {
+                              setModalVisible(false);
+                              setFeedbackMessage("Entrega cancelada com sucesso!");
+                              setFeedbackSuccess(true);
+
+                              // Mostra o feedback com leve atraso, pra evitar sobreposição visual
+                              setTimeout(() => setFeedbackVisible(true), 200);
+
+                              // Atualiza lista após o feedback
+                              setTimeout(async () => {
+                                const refresh = await axios.get("http://localhost:3000/delivery/getAll");
+                                setPedidos(refresh.data.data);
+                              }, 1500);
+                            } else {
+                              setFeedbackMessage("Erro ao atualizar o status da entrega.");
+                              setFeedbackSuccess(false);
+                              setFeedbackVisible(true);
+                            }
+                          } catch (error) {
+                            console.error("Erro ao atualizar status:", error);
+                            setFeedbackMessage("Falha ao comunicar com o servidor.");
+                            setFeedbackSuccess(false);
+                            setFeedbackVisible(true);
+                          }
+                        }}
+                        className="bg-red-500 w-fit min-w-24 mx-auto p-3 rounded-xl shadow-md hover:bg-red-700"
+                      >
+                        <Text className="text-center text-white font-semibold text-base">
+                          Cancelar
+                        </Text>
+                      </Pressable>
+                    )}
+                    <Pressable
+                      onPress={() => setModalVisible(false)}
+                      className="bg-blue-500 w-fit min-w-24 mx-auto p-3 rounded-xl shadow-md hover:bg-blue-700"
+                    >
+                      <Text className="text-center text-white font-semibold text-base">
+                        Fechar
+                      </Text>
+                    </Pressable>
+                  </View>
+                </>
+              )}
             </View>
           </View>
         </Modal>
@@ -304,133 +454,146 @@ export default function Orders() {
           onRequestClose={() => setModalPagamento(false)}
         >
           <View className="flex-1 bg-black/50 justify-center items-center px-5">
-            <View className="bg-white rounded-2xl w-full p-5 max-w-md items-center">
-              <Text className="text-xl font-bold text-gray-800 mb-3">
-                Pagamento da Entrega #{pedidoSelecionado?.id}
-              </Text>
+            <View className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl">
 
-              <Text className="text-gray-700 text-center mb-2">
-                Escaneie o QR Code abaixo ou copie o código Pix para pagamento.
-              </Text>
+              {/* Cabeçalho com gradiente */}
+              <LinearGradient
+                colors={["#4F46E5", "#3B82F6"]}
+                className="p-3 items-center"
+              >
+                <Text className="text-white text-lg font-bold">
+                  Pagamento da Entrega #{pedidoSelecionado?.entrega.id}
+                </Text>
+                <Text className="text-white text-sm mt-1">
+                  Escaneie o QR Code ou copie o código Pix
+                </Text>
+              </LinearGradient>
 
-              {pedidoSelecionado && (
-                <>
-                  {/* QR Code genérico */}
-                  <View className="bg-gray-100 rounded-lg p-4 mb-3">
-                    <QRCode
-                      value={`Pagamento da entrega #${pedidoSelecionado.id} - Valor R$ ${Number(
-                        pedidoSelecionado.value
-                      ).toFixed(2)}`}
-                      size={180}
-                    />
-                  </View>
+              <View className="p-5 items-center">
+                {pedidoSelecionado && (
+                  <>
+                    {/* QR Code */}
+                    <View className="bg-gray-50 rounded-2xl p-5 mb-4 border border-gray-200 shadow-sm">
+                      <QRCode
+                        value={`Pagamento da entrega #${pedidoSelecionado.entrega.id} - Valor R$ ${Number(
+                          pedidoSelecionado.entrega.entrega_valor
+                        ).toFixed(2)}`}
+                        size={200}
+                      />
+                    </View>
 
-                  {/* Valor da entrega */}
-                  <Text className="text-gray-700 font-semibold text-lg mb-1">
-                    Valor: R$ {Number(pedidoSelecionado.value).toFixed(2)}
-                  </Text>
-
-                  {/* Código Pix genérico */}
-                  <Text className="text-gray-700 font-semibold mb-1 mt-3">
-                    Código Pix (Copia e Cola):
-                  </Text>
-
-                  <ScrollView className="max-w-72 max-h-24 mb-2">
-                    <Text
-                      selectable
-                      className="bg-gray-100 rounded-lg p-2 text-xs text-center text-gray-600"
-                    >
-                      00020126580014BR.GOV.BCB.PIX0136pix@mechameja.com.br5204000053039865406
-                      {Number(pedidoSelecionado.value).toFixed(2).replace(".", "")}
-                      5802BR5911ME CHAME JA6014MOGI DAS CRUZES62070503***6304ABCD
+                    {/* Valor */}
+                    <Text className="text-gray-800 font-bold text-xl mb-1">
+                      R$ {Number(pedidoSelecionado.entrega.entrega_valor).toFixed(2)}
                     </Text>
-                  </ScrollView>
+                    <Text className="text-gray-500 text-sm mb-3">Valor da entrega</Text>
 
-                  {/* Botão de copiar código Pix */}
-                  <Pressable
-                    onPress={async () => {
-                      const codigoPix = `00020126580014BR.GOV.BCB.PIX0136pix@mechameja.com.br5204000053039865406${Number(
-                        pedidoSelecionado.value
-                      )
-                        .toFixed(2)
-                        .replace(".", "")}5802BR5911ME CHAME JA6014MOGI DAS CRUZES62070503***6304ABCD`;
+                    {/* Código Pix */}
+                    <View className="flex w-full mb-3">
+                      <Text className="text-gray-700 font-semibold mb-1 text-center">
+                        Código Pix (Copia e Cola)
+                      </Text>
+                      <View className="relative">
+                        <ScrollView className="max-h-28 bg-gray-50 rounded-xl border border-gray-200 p-2">
+                          <Text
+                            selectable
+                            className="text-[11px] text-gray-700 text-center leading-tight"
+                          >
+                            00020126580014BR.GOV.BCB.PIX0136pix@mechameja.com.br5204000053039865406
+                            {Number(pedidoSelecionado.entrega.entrega_valor)
+                              .toFixed(2)
+                              .replace(".", "")}
+                            5802BR5911ME CHAME JA6014MOGI DAS CRUZES62070503***6304ABCD
+                          </Text>
+                        </ScrollView>
+                        {/* Botão copiar Pix */}
+                        <Pressable
+                          onPress={async () => {
+                            const codigoPix = `00020126580014BR.GOV.BCB.PIX0136pix@mechameja.com.br5204000053039865406${Number(
+                              pedidoSelecionado.entrega.entrega_valor
+                            )
+                              .toFixed(2)
+                              .replace(".", "")}5802BR5911ME CHAME JA6014MOGI DAS CRUZES62070503***6304ABCD`;
 
-                      await Clipboard.setStringAsync(codigoPix);
-                      setFeedbackMessage("Código Pix copiado com sucesso!");
-                      setFeedbackSuccess(true);
-                      setFeedbackVisible(true);
-                    }}
-                    className="bg-green-600 w-full py-3 rounded-xl mb-3"
-                  >
-                    <Text className="text-center text-white font-semibold">
-                      Copiar código Pix
-                    </Text>
-                  </Pressable>
+                            await Clipboard.setStringAsync(codigoPix);
+                            setFeedbackMessage("Código Pix copiado com sucesso!");
+                            setFeedbackSuccess(true);
+                            setFeedbackVisible(true);
+                          }}
+                          className="bg-gray-500 absolute right-0 justify-center h-full px-2 rounded-xl shadow-sm hover:bg-gray-700"
+                        >
+                          <Ionicons name="copy" size={20} color="white" className="p-1" />
+                        </Pressable>
+                      </View>
+                    </View>
 
-                  {/* Botão de concluir pagamento */}
-                  <Pressable
-                    onPress={async () => {
-                      try {
-                        const updatedDelivery = {
-                          ...pedidoSelecionado,
-                          status: "pendente",
-                        };
+                    {/* Botão confirmar pagamento */}
+                    <Pressable
+                      onPress={async () => {
+                        try {
+                          const entrega = pedidoSelecionado.entrega;
+                          const updatedDelivery = {
+                            id: entrega.id,
+                            entrega_status: "pendente",
+                          };
 
-                        const response = await axios.post(
-                          "http://localhost:3000/delivery/update",
-                          updatedDelivery
-                        );
+                          const response = await axios.post(
+                            "http://localhost:3000/delivery/update",
+                            updatedDelivery
+                          );
 
-                        if (response.data?.success || response.status === 200) {
-                          setFeedbackMessage("Pagamento confirmado! Entrega liberada para motoristas.");
-                          setFeedbackSuccess(true);
-                          setFeedbackVisible(true);
+                          if (response.data?.success || response.status === 200) {
+                            setFeedbackMessage("Pagamento confirmado! Entrega liberada para motoristas.");
+                            setFeedbackSuccess(true);
+                            setFeedbackVisible(true);
 
-                          // Fecha modal e recarrega lista após feedback
-                          setTimeout(async () => {
-                            setModalPagamento(false);
-                            const refresh = await axios.get("http://localhost:3000/delivery/getAll");
-                            setPedidos(refresh.data.data);
-                          }, 1500);
-                        } else {
-                          setFeedbackMessage("Erro ao atualizar o status da entrega.");
+                            setTimeout(async () => {
+                              setModalPagamento(false);
+                              const refresh = await axios.get("http://localhost:3000/delivery/getAll");
+                              setPedidos(refresh.data.data);
+                            }, 1500);
+                          } else {
+                            setFeedbackMessage("Erro ao atualizar o status da entrega.");
+                            setFeedbackSuccess(false);
+                            setFeedbackVisible(true);
+                          }
+                        } catch (error) {
+                          console.error("Erro ao atualizar status:", error);
+                          setFeedbackMessage("Falha ao comunicar com o servidor.");
                           setFeedbackSuccess(false);
                           setFeedbackVisible(true);
                         }
-                      } catch (error) {
-                        console.error("Erro ao atualizar status:", error);
-                        setFeedbackMessage("Falha ao comunicar com o servidor.");
-                        setFeedbackSuccess(false);
-                        setFeedbackVisible(true);
-                      }
-                    }}
-                    className="bg-blue-600 w-full py-3 rounded-xl mb-3"
-                  >
-                    <Text className="text-center text-white font-semibold">
-                      Concluir pagamento
-                    </Text>
-                  </Pressable>
-                </>
-              )}
+                      }}
+                      className="bg-green-500 w-full py-3 rounded-xl mb-2 shadow-sm hover:bg-green-700"
+                    >
+                      <Text className="text-center text-white font-semibold text-base">
+                        Concluir pagamento
+                      </Text>
+                    </Pressable>
 
-              {/* Botão de fechar */}
-              <Pressable
-                onPress={() => setModalPagamento(false)}
-                className="bg-gray-400 w-full py-3 rounded-xl"
-              >
-                <Text className="text-center text-white font-semibold">Fechar</Text>
-              </Pressable>
+                    {/* Botão fechar */}
+                    <Pressable
+                      onPress={() => setModalPagamento(false)}
+                      className="bg-blue-500 w-full py-3 rounded-xl mt-1 hover:bg-blue-700"
+                    >
+                      <Text className="text-center text-white font-semibold text-base">
+                        Fechar
+                      </Text>
+                    </Pressable>
+                  </>
+                )}
+              </View>
             </View>
           </View>
-
-          {/* Feedback Modal */}
-          <FeedbackModal
-            visible={feedbackVisible}
-            message={feedbackMessage}
-            success={feedbackSuccess}
-            onClose={() => setFeedbackVisible(false)}
-          />
         </Modal>
+
+        {/* Feedback Modal */}
+        <FeedbackModal
+          visible={feedbackVisible}
+          message={feedbackMessage}
+          success={feedbackSuccess}
+          onClose={() => setFeedbackVisible(false)}
+        />
 
       </View>
     </LinearGradient>
