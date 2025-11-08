@@ -26,11 +26,11 @@ export const deliveryApi = {
     return response.data;
   },
 
-  updateDeliveryStatus: async function (entregaId: number, motoristaId: number, status: string, cancel = false) {
+  updateDeliveryStatus: async function (entrega_id: number, motorista_id: number, entrega_status: string, cancel = false) {
     const response = await api.request({
       url: "/delivery/update",
       method: "POST",
-      data: { entregaId, motoristaId, status },
+      data: { entrega_id, motorista_id, entrega_status },
       headers: { "Content-Type": "application/json" },
       signal: cancel
         ? cancelApiObject[this.updateDeliveryStatus.name].handleRequestCancellation().signal
