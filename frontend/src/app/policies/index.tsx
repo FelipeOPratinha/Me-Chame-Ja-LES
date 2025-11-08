@@ -15,13 +15,16 @@ export default function Policies() {
         <Header />
 
         {/* Conteúdo */}
-        <ScrollView className="flex-1 px-5 py-6">
-          <Text className="text-2xl font-bold text-white mb-6">
-            Termos, Políticas & Suporte
-          </Text>
+        <ScrollView className="flex-1 w-full xl:w-1/2 mx-auto p-4 space-y-4">
+          {/* Header */}
+          <View className="flex-row items-center justify-between bg-white px-2 mb-3 rounded-xl shadow p-2">
+            <Text className="text-base font-semibold text-[#5E60CE] text-center m-auto">
+              Suporte e Atendimento
+            </Text>
+          </View>
 
           {/* Termos e Condições */}
-          <View className="bg-white rounded-xl shadow-md p-4 mb-5">
+          <View className="bg-white rounded-xl shadow-md p-4 mb-5 hover:bg-slate-200">
             <Text className="text-lg font-semibold text-gray-800">
               Termos e Condições
             </Text>
@@ -29,13 +32,13 @@ export default function Policies() {
               Ao utilizar nosso aplicativo, você concorda com os termos
               estabelecidos nesta plataforma.
             </Text>
-            <Pressable className="mt-3 self-start px-3 py-2 rounded-md bg-indigo-500">
-              <Text className="text-white font-medium">Ler Mais</Text>
+            <Pressable className="bg-indigo-500 mt-3 self-end px-3 py-2 rounded-md hover:bg-indigo-700">
+              <Text className="text-white font-medium">Mais informações</Text>
             </Pressable>
           </View>
 
           {/* Política de Privacidade */}
-          <View className="bg-white rounded-xl shadow-md p-4 mb-5">
+          <View className="bg-white rounded-xl shadow-md p-4 mb-5 hover:bg-slate-200">
             <Text className="text-lg font-semibold text-gray-800">
               Política de Privacidade
             </Text>
@@ -43,13 +46,13 @@ export default function Policies() {
               Veja como coletamos, armazenamos e utilizamos suas informações
               pessoais de forma segura.
             </Text>
-            <Pressable className="mt-3 self-start px-3 py-2 rounded-md bg-indigo-500">
-              <Text className="text-white font-medium">Ler Mais</Text>
+            <Pressable className="bg-indigo-500 mt-3 self-end px-3 py-2 rounded-md hover:bg-indigo-700">
+              <Text className="text-white font-medium">Mais informações</Text>
             </Pressable>
           </View>
 
           {/* Segurança */}
-          <View className="bg-white rounded-xl shadow-md p-4 mb-5">
+          <View className="bg-white rounded-xl shadow-md p-4 mb-5 hover:bg-slate-200">
             <Text className="text-lg font-semibold text-gray-800">
               Segurança
             </Text>
@@ -57,13 +60,13 @@ export default function Policies() {
               Suas informações são protegidas por criptografia e medidas
               avançadas de segurança digital.
             </Text>
-            <Pressable className="mt-3 self-start px-3 py-2 rounded-md bg-indigo-500">
-              <Text className="text-white font-medium">Ler Mais</Text>
+            <Pressable className="bg-indigo-500 mt-3 self-end px-3 py-2 rounded-md hover:bg-indigo-700">
+              <Text className="text-white font-medium">Mais informações</Text>
             </Pressable>
           </View>
 
           {/* Suporte */}
-          <View className="bg-white rounded-xl shadow-md p-4 mb-5">
+          <View className="bg-white rounded-xl shadow-md p-4 mb-5 hover:bg-slate-200">
             <Text className="text-lg font-semibold text-gray-800">
               Suporte
             </Text>
@@ -71,13 +74,13 @@ export default function Policies() {
               Precisa de ajuda com o aplicativo? Confira nossa central de ajuda
               com respostas para as dúvidas mais comuns.
             </Text>
-            <Pressable className="mt-3 self-start px-3 py-2 rounded-md bg-indigo-500">
-              <Text className="text-white font-medium">Acessar Suporte</Text>
+            <Pressable className="bg-indigo-500 mt-3 self-end px-3 py-2 rounded-md hover:bg-indigo-700">
+              <Text className="text-white font-medium">Consultar Suporte</Text>
             </Pressable>
           </View>
 
           {/* Atendimento */}
-          <View className="bg-white rounded-xl shadow-md p-4 mb-8">
+          <View className="bg-white rounded-xl shadow-md p-4 mb-8 hover:bg-slate-200">
             <Text className="text-lg font-semibold text-gray-800">
               Atendimento
             </Text>
@@ -85,8 +88,8 @@ export default function Policies() {
               Entre em contato diretamente com nossa equipe de atendimento para
               resolver qualquer problema ou enviar feedback.
             </Text>
-            <Pressable className="mt-3 self-start px-3 py-2 rounded-md bg-indigo-500">
-              <Text className="text-white font-medium">Falar com Atendimento</Text>
+            <Pressable className="bg-indigo-500 mt-3 self-end px-3 py-2 rounded-md hover:bg-indigo-700">
+              <Text className="text-white font-medium">Solicitar Atendimento</Text>
             </Pressable>
           </View>
         </ScrollView>
