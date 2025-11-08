@@ -2,6 +2,7 @@ import { View, Text, Pressable } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 type RouteDetailsProps = {
   distanciaKm: number;
@@ -15,9 +16,10 @@ export function RouteDetails({
   onConfirmar,
 }: RouteDetailsProps) {
   const [precoEstimado, setPrecoEstimado] = useState(0);
+  const [cupomAplicado, setCupomAplicado] = useState<string | null>(null);
 
   useEffect(() => {
-    const calcularPreco = () => {
+    const calcularPreco = async () => {
       const taxaBase = 5.0;
       const precoPorKm = 2.5;
       const precoPorMinuto = 0.3;
@@ -29,6 +31,33 @@ export function RouteDetails({
 
       let preco = taxaBase + distanciaKm * precoPorKm + duracaoMin * precoPorMinuto;
       if (emHorarioPico) preco *= multiplicadorHorarioPico;
+
+      // Verifica se há cupom ativo no AsyncStorage
+      const cupomData = await AsyncStorage.getItem("cupomAtivo");
+
+      if (cupomData) {
+        const { tipo, valor, ativo } = JSON.parse(cupomData);
+
+        if (ativo) {
+          if (tipo === "percentual") {
+            // Aplica o desconto percentual
+            const desconto = preco * (valor / 100);
+            preco -= desconto;
+            setCupomAplicado(`${valor}% OFF`);
+          } else if (tipo === "valor") {
+            // Aplica desconto fixo em reais
+            preco -= valor;
+            setCupomAplicado(`R$ ${valor.toFixed(2)} OFF`);
+          } else if (tipo === "frete") {
+            // Entrega grátis → preço = 0
+            preco = 0;
+            setCupomAplicado("Entrega Grátis");
+          }
+
+          // Consome o cupom (remove do armazenamento)
+          await AsyncStorage.removeItem("cupomAtivo");
+        }
+      }
 
       setPrecoEstimado(parseFloat(preco.toFixed(2)));
     };
@@ -59,6 +88,13 @@ export function RouteDetails({
             <Text className="text-base font-semibold text-[#5E60CE]">
               R$ {precoEstimado.toFixed(2)}
             </Text>
+
+            {/* Mostra o cupom aplicado, se houver */}
+            {cupomAplicado && (
+              <Text className="text-xs text-green-600 font-semibold mt-1">
+                Cupom aplicado: {cupomAplicado}
+              </Text>
+            )}
           </View>
         </View>
 
