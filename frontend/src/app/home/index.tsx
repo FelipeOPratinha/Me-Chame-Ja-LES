@@ -88,6 +88,46 @@ export default function Home() {
   }, []);
 
   // =====================================================
+  // Carrega a corrida ativa (para motorista)
+  // =====================================================
+  useEffect(() => {
+    const carregarCorridaAtiva = async () => {
+      try {
+        const corridaSalva = await AsyncStorage.getItem("corridaAtiva");
+        if (corridaSalva) {
+          const corrida = JSON.parse(corridaSalva);
+
+          // Extrai origem, paradas e destino do objeto salvo
+          const trajetos = corrida.trajetos || [];
+          if (trajetos.length >= 2) {
+            const origem = trajetos[0].endereco;
+            const destino = trajetos[trajetos.length - 1].endereco;
+            const intermediarias =
+              trajetos.length > 2 ? trajetos.slice(1, -1).map((t: any) => t.endereco) : [];
+
+            const formatar = (e: any) => ({
+              lat: Number(e.endereco_latitude),
+              lon: Number(e.endereco_longitude),
+            });
+
+            setRetirada(formatar(origem));
+            setDestino(formatar(destino));
+            setParadas(intermediarias.map(formatar));
+          }
+
+          // Salva e seta o estado da corrida ativa
+          setCorridaAtiva(corrida);
+        }
+      } catch (err) {
+        console.error("❌ Erro ao carregar corrida ativa:", err);
+      }
+    };
+
+    carregarCorridaAtiva();
+  }, []);
+
+
+  // =====================================================
   // Função de envio dos itens
   // =====================================================
   function formatarDataLocal(date: Date | null) {
@@ -295,9 +335,9 @@ export default function Home() {
           {/* Mapa */}
           <View className="xl:flex-[2] min-h-48 m-1">
             <Map
-              retirada={retirada}
-              paradas={paradas}
-              destino={destino}
+              retirada={corridaAtiva ? retirada : retirada}
+              paradas={corridaAtiva ? paradas : paradas}
+              destino={corridaAtiva ? destino : destino}
               onResumoRota={setResumoRota}
             />
           </View>
@@ -334,8 +374,39 @@ export default function Home() {
                 </>
               ) : (
                 <>
-                  <TripList onTripAccepted={setCorridaAtiva} />
                   <VehicleCard onAddVehicle={() => setShowFormVehicle(true)} />
+                  <TripList
+                    onTripAccepted={(trip) => {
+                      // Se trip for null, significa que a corrida foi cancelada ou concluída
+                      if (!trip) {
+                        setCorridaAtiva(null);
+                        setRetirada(null);
+                        setDestino(null);
+                        setParadas([]);
+                        return;
+                      }
+
+                      // Caso contrário, motorista acabou de aceitar
+                      setCorridaAtiva(trip);
+
+                      const trajetos = trip.trajetos || [];
+                      if (trajetos.length >= 2) {
+                        const origem = trajetos[0].endereco;
+                        const destino = trajetos[trajetos.length - 1].endereco;
+                        const intermediarias =
+                          trajetos.length > 2 ? trajetos.slice(1, -1).map((t: any) => t.endereco) : [];
+
+                        const formatar = (e: any) => ({
+                          lat: Number(e.endereco_latitude),
+                          lon: Number(e.endereco_longitude),
+                        });
+
+                        setRetirada(formatar(origem));
+                        setDestino(formatar(destino));
+                        setParadas(intermediarias.map(formatar));
+                      }
+                    }}
+                  />
                 </>
               )}
             </ScrollView>
