@@ -6,6 +6,7 @@ const ValidateDeliveryForUpdateStrategy = require('../strategies/Delivery/Valida
 const UpdateDeliveryStrategy = require('../strategies/Delivery/UpdateDeliveryStrategy');
 const GetDeliveriesStrategy = require('../strategies/Delivery/GetDeliveriesStrategy');
 const DeleteDeliveryStrategy = require('../strategies/Delivery/DeleteDeliveryStrategy');
+const GetDeliveriesByUserStrategy = require('../strategies/Delivery/GetDeliveriesByUserStrategy');
 
 class DeliveryService {
     static async saveDelivery(delivery) {
@@ -54,6 +55,14 @@ class DeliveryService {
         try {
             await CheckDeliveryIfExistsStrategy.execute({ id: delivery.id }, "mustExist");
             return await DeleteDeliveryStrategy.execute(delivery.id);
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    static async getDeliveriesByUser(usuario_id) {
+        try {
+            return await GetDeliveriesByUserStrategy.execute(usuario_id);
         } catch (error) {
             throw error;
         }

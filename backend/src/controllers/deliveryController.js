@@ -55,4 +55,15 @@ router.post('/delete', async (req, res) => {
     }
 });
 
+router.get('/getByUser', async (req, res) => {
+    const usuario_id = req.query.usuario_id;
+
+    try {
+        const result = await DeliveryService.getDeliveriesByUser(usuario_id);
+        res.status(200).json(result);
+    } catch (error) {
+        res.status(500).json({ message: `Erro ao consultar entregas do usuário: ${error}`, status: 500 });
+    }
+});
+
 module.exports = router;
