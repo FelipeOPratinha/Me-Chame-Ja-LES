@@ -123,7 +123,7 @@ export function FormVehicle({ goBack }: { goBack: () => void }) {
       ) {
         setFeedbackMessage("Veículo já existente no banco.");
       } else {
-        setFeedbackMessage("Falha ao enviar os dados. Verifique o servidor.");
+        setFeedbackMessage("Veículo já existente no banco.");
       }
       setFeedbackSuccess(false);
     } finally {
