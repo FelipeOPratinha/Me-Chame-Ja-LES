@@ -38,6 +38,17 @@ export const deliveryApi = {
     });
     return response.data;
   },
+
+  getDeliveriesByUser: async function (usuario_id: number, cancel = false) {
+    const response = await api.request({
+      url: `/delivery/getByUser?usuario_id=${usuario_id}`,
+      method: "GET",
+      signal: cancel
+        ? cancelApiObject[this.getDeliveriesByUser.name].handleRequestCancellation().signal
+        : undefined,
+    });
+    return response.data;
+  },
 };
 
 const cancelApiObject = defineCancelApiObject(deliveryApi);
