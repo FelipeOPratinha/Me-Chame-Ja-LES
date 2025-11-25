@@ -2,6 +2,28 @@ const express = require('express');
 const router = express.Router();
 const UserService = require('../services/UserService');
 
+router.post('/register-token', async (req, res) => {
+    const { usuario_id, usuario_fcm_token } = req.body;
+
+    if (!usuario_id || !usuario_fcm_token) {
+        return res.status(400).json({
+            success: false,
+            message: "usuario_id e usuario_fcm_token são obrigatórios"
+        });
+    }
+
+    try {
+        const result = await UserService.saveUserToken(usuario_id, usuario_fcm_token);
+
+        res.status(200).json({ success: true, message: "Token salvo com sucesso!" });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Erro ao salvar token do usuário",
+        });
+    }
+});
+
 router.post('/login', async (req, res) => {
     const user = req.body;
 

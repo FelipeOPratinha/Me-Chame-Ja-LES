@@ -59,7 +59,13 @@ const User = sequelize.define('usuario', {
         allowNull: true,
         defaultValue: 1,
         field: "usuario_ativo"
+    },
+
+    usuario_fcm_token: {
+        type: DataTypes.STRING(300),
+        allowNull: true
     }
+
 }, {
     timestamps: false,
     freezeTableName: true

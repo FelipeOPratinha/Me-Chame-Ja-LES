@@ -5,6 +5,7 @@ const SaveUserStrategy = require('../strategies/User/SaveUserStrategy');
 const UpdateUserStrategy = require('../strategies/User/UpdateUserStrategy');
 const GetUsersStrategy = require('../strategies/User/GetUsersStrategy');
 const DeleteUserStrategy = require('../strategies/User/DeleteUserStrategy');
+const SaveUserTokenStrategy = require('../strategies/User/SaveUserTokenStrategy');
 const { Op } = require("sequelize");
 
 
@@ -60,6 +61,14 @@ class UserService {
         try {
             await CheckUserIfExistsStrategy.execute({ id: user.id }, "mustExist");
             return await DeleteUserStrategy.execute(user.id);
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    static async saveUserToken(usuario_id, usuario_fcm_token) {
+        try {
+            return await SaveUserTokenStrategy.execute({ usuario_id, usuario_fcm_token });
         } catch (error) {
             throw error;
         }

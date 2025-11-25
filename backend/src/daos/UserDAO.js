@@ -52,6 +52,17 @@ class UserDAO {
             throw error;
         }
     }
+
+    static async updateUserToken(id, token, transaction = null) {
+        try {
+            return await User.update(
+                { usuario_fcm_token: token },
+                { where: { id: id }, transaction }
+            );
+        } catch (error) {
+            throw error;
+        }
+    }
 }
 
 module.exports = UserDAO;
