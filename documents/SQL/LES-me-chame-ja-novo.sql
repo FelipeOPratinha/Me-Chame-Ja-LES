@@ -16,7 +16,8 @@ CREATE TABLE usuario (
     usuario_telefone VARCHAR(20),
     usuario_data_criacao DATETIME DEFAULT CURRENT_TIMESTAMP,
     usuario_pontos_fidelidade INT DEFAULT 0,
-    usuario_ativo INT DEFAULT 1
+    usuario_ativo INT DEFAULT 1,
+    usuario_fcm_token VARCHAR(300) DEFAULT NULL
 );
 
 -- ==========================================
